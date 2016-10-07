@@ -6,9 +6,9 @@ import org.apache.spark.rdd.RDD;
 
 import com.datatorrent.api.DAG;
 import com.datatorrent.api.Operator;
-import com.datatorrent.example.utils.Operators.FilterOperator;
-import com.datatorrent.example.utils.Operators.MapOperator;
-import com.datatorrent.example.utils.Operators.ReduceOperator;
+import com.datatorrent.example.utils.FilterOperator;
+import com.datatorrent.example.utils.MapOperator;
+import com.datatorrent.example.utils.ReduceOperator;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 
 import scala.Function1;
