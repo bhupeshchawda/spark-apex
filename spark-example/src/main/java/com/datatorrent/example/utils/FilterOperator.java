@@ -19,6 +19,15 @@ public class FilterOperator extends BaseOperator
       }
     }
   };
-  public final transient DefaultOutputPort<Object> output = new DefaultOutputPort<>();
+  public final transient DefaultOutputPort<Object> output = new DefaultOutputPort<Object>();
+  public DefaultOutputPort<Object> getOutputPort(){
+    return this.output;
+  }
+  public DefaultInputPort<Object> getInputPort(){
+    return this.input;
+  }
+  public boolean isInputPortOpen=true;
+  public boolean isOutputPortOpen=true;
+
 }
 

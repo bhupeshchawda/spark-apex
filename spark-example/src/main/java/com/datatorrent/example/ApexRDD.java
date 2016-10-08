@@ -1,5 +1,7 @@
 package com.datatorrent.example;
 
+import com.datatorrent.api.DefaultInputPort;
+import com.datatorrent.api.DefaultOutputPort;
 import org.apache.spark.Partition;
 import org.apache.spark.TaskContext;
 import org.apache.spark.rdd.RDD;
@@ -16,6 +18,8 @@ import scala.Function2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
+import java.lang.reflect.Field;
+
 public class ApexRDD<T> extends RDD<T>
 {
   private static final long serialVersionUID = -3545979419189338756L;
@@ -23,7 +27,9 @@ public class ApexRDD<T> extends RDD<T>
   public DAG dag;
   public Operator currentOperator;
   public OperatorType currentOperatorType;
-
+  public DefaultOutputPort<Object> currentOutputPort;
+  public DefaultInputPort<Object> currentInputPort;
+  public Integer operatorCount;
   public ApexRDD(RDD<T> rdd, ClassTag<T> classTag)
   {
     super(rdd, classTag);
@@ -34,7 +40,6 @@ public class ApexRDD<T> extends RDD<T>
     super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
     dag = new LogicalPlan();
   }
-
   public DAG getDag()
   {
     return dag;
@@ -43,25 +48,70 @@ public class ApexRDD<T> extends RDD<T>
   @Override
   public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3)
   {
-    MapOperator m1 = dag.addOperator("Map"+System.currentTimeMillis(), MapOperator.class);
-    m1.f = f;
+
+    MapOperator m1 = dag.addOperator("Map "+System.currentTimeMillis(), MapOperator.class);
+
+    try {
+      if(m1.isInputPortOpen) {
+        dag.addStream("MapStream " + System.currentTimeMillis(), currentOutputPort, m1.input);
+        m1.isInputPortOpen=false;
+        if(m1.isOutputPortOpen){
+          currentOutputPort=m1.output;
+          m1.isOutputPortOpen=false;
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    currentOperator=m1;
     return (ApexRDD<U>)this;
   }
 
   @Override
   public RDD<T> filter(Function1<T, Object> f)
   {
-    FilterOperator m1 = dag.addOperator("Map" + System.currentTimeMillis(), FilterOperator.class);
-    m1.f = f;
+    System.out.println(" map ");
+    FilterOperator filterOperator = dag.addOperator("Filter " + System.currentTimeMillis(), FilterOperator.class);
+    filterOperator.f = f;
+    try {
+      if(filterOperator.isInputPortOpen) {
+        dag.addStream("MapStream " + System.currentTimeMillis(), currentOutputPort, filterOperator.input);
+        filterOperator.isInputPortOpen=false;
+        if(filterOperator.isOutputPortOpen) {
+          currentOutputPort = filterOperator.output;
+          filterOperator.isOutputPortOpen=false;
+        }
+
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    currentOperator=filterOperator;
     return this;
   }
 
   @Override
   public T reduce(Function2<T, T, T> f)
   {
-    ReduceOperator r1 = dag.addOperator("Reduce" + System.currentTimeMillis(), ReduceOperator.class);
+    System.out.println(" map ");
+    ReduceOperator r1 = dag.addOperator("Reduce " + System.currentTimeMillis(), ReduceOperator.class);
+    try {
+      if(r1.isInputPortOpen) {
+        dag.addStream("MapStream " + System.currentTimeMillis(), currentOutputPort, r1.input);
+        r1.isInputPortOpen=false;
+        if(r1.isOutputPortOpen) {
+          currentOutputPort = r1.output;
+          r1.isOutputPortOpen=false;
+        }
+
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    currentOperator =r1;
     r1.f = f;
-    return (T) this;
+    System.out.println(dag.toString());
+    return (T) new Integer(1);
   }
 
   @Override

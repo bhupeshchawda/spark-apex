@@ -14,10 +14,8 @@ public class TextFileOperator extends BaseOperator implements InputOperator
     tuplesInWindow = 0;
   }
 
-  @Override
-  public void emitTuples()
-  {
+
+  public void emitTuples() {
 
   }
-
 }
