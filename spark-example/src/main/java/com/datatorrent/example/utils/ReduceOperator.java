@@ -17,7 +17,9 @@ public class ReduceOperator extends BaseOperator
   public void beginWindow(long windowId)
   {
     if (done) {
+      System.out.println("Emitted Final Value: " + finalValue);
       output.emit(finalValue);
+      done = false;
     }
   }
 
@@ -30,7 +32,8 @@ public class ReduceOperator extends BaseOperator
         previousValue = tuple;
         finalValue = tuple;
       } else {
-        finalValue = f.apply(finalValue, previousValue);
+        finalValue = f.apply(previousValue, tuple);
+        System.out.println("Current Final Value: " + finalValue);
       }
     }
   };
