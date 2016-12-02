@@ -2,13 +2,10 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
-import com.datatorrent.common.util.BaseOperator;
 import com.datatorrent.example.MyBaseOperator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.file.tfile.DTFile;
-import scala.tools.cmd.gen.AnyVals;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -16,16 +13,29 @@ import java.io.InputStreamReader;
 /**
  * Created by harsh on 2/12/16.
  */
-public abstract class BaseInputOperator extends MyBaseOperator implements InputOperator {
+public class BaseInputOperator extends MyBaseOperator implements InputOperator {
     public BaseInputOperator(){
 
+    }
+    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
+    public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
+
+    public DefaultInputPortSerializable<Object> getInputPort() {
+        return null;
+    }
+
+    public DefaultOutputPortSerializable getOutputPort() {
+        return output;
+    }
+
+    public DefaultOutputPortSerializable getControlPort() {
+        return null;
     }
 
     public void emitTuples() {
 
     }
-    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
-    public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
+
 
     @Override
     public void setup(Context.OperatorContext context) {

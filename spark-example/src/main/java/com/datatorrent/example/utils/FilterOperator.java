@@ -1,9 +1,5 @@
 package com.datatorrent.example.utils;
 
-import com.datatorrent.api.DefaultInputPort;
-import com.datatorrent.api.DefaultOutputPort;
-import com.datatorrent.common.util.BaseOperator;
-
 import com.datatorrent.example.MyBaseOperator;
 import scala.Function1;
 
@@ -21,10 +17,15 @@ public class FilterOperator extends MyBaseOperator
     }
   };
   public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
-  public DefaultOutputPort<Object> getOutputPort(){
+  public DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }
-  public DefaultInputPort<Object> getInputPort(){
+
+  public DefaultOutputPortSerializable getControlPort() {
+    return null;
+  }
+
+  public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }
   public boolean isInputPortOpen=true;
