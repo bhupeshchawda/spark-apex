@@ -9,17 +9,17 @@ import scala.Function1;
 public class FilterOperator extends BaseOperator
 {
   public Function1 f;
-  public final transient DefaultInputPort<Object> input = new DefaultInputPort<Object>()
-  {
+  public final transient DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
     {
+
       if((Boolean) f.apply(tuple)) {
         output.emit(tuple);
       }
     }
   };
-  public final transient DefaultOutputPort<Object> output = new DefaultOutputPort<Object>();
+  public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
   public DefaultOutputPort<Object> getOutputPort(){
     return this.output;
   }

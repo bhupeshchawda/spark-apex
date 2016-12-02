@@ -9,8 +9,8 @@ import scala.Function2;
 public class ReduceOperator extends BaseOperator
 {
   public Function2 f;
-  Object previousValue = null;
-  Object finalValue = null;
+  public Object previousValue = null;
+  public Object finalValue = null;
   private boolean done = false;
 
   @Override
@@ -21,8 +21,7 @@ public class ReduceOperator extends BaseOperator
     }
   }
 
-  public final transient DefaultInputPort<Object> input =   new DefaultInputPort<Object>()
-  {
+  public final transient DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
     {
@@ -31,26 +30,28 @@ public class ReduceOperator extends BaseOperator
         finalValue = tuple;
       } else {
         finalValue = f.apply(finalValue, previousValue);
+
       }
     }
   };
 
-  public final transient DefaultInputPort<Boolean> controlDone = new DefaultInputPort<Boolean>()
-  {
+  public final transient DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
     @Override
     public void process(Boolean tuple)
     {
       done = true;
     }
   };
-  public final transient DefaultOutputPort<Object> output = new DefaultOutputPort<Object>();
-  public DefaultOutputPort<Object> getOutputPort(){
+  public final transient DefaultOutputPortSerializable<Object> output = (DefaultOutputPortSerializable<Object>) new DefaultOutputPort<Object>();
+  public DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }
-  public DefaultInputPort<Object> getInputPort(){
+  public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }
   public boolean isInputPortOpen=true;
   public boolean isOutputPortOpen=true;
+  public boolean isControlInputOpen=true;
+  public boolean isControlOutputOpen=true;
 
 }

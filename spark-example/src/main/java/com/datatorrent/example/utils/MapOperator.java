@@ -10,19 +10,18 @@ public class MapOperator extends BaseOperator
 {
 
   public Function1 f;
-  public final transient DefaultInputPort<Object> input = new DefaultInputPort<Object>()
-  {
+  public final transient DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
     {
       output.emit(f.apply(tuple));
     }
   };
-  public final transient DefaultOutputPort<Object> output = new DefaultOutputPort<Object>();
-  public DefaultOutputPort<Object> getOutputPort(){
+  public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
+  public DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }
-  public DefaultInputPort<Object> getInputPort(){
+  public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }
   public boolean isInputPortOpen=true;
