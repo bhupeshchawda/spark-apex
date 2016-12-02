@@ -64,10 +64,8 @@ public class ApexRDD<T> extends RDD<T>
     System.out.println("CloneDag "+ cloneDag.toString());
     System.out.println("Dag "+dag.toString());
     
-    Operator.OutputPort<Object> op;
-    for (LogicalPlan.StreamMeta s : cloneDag.getAllStreams()){
-      op= (Operator.OutputPort<Object>) s.getSource().getPortObject();
-    }
+//    Operator.OutputPort<Object> op = null;
+//    System.out.println(cloneDag.getAllStreams().size());
 
     cloneDag.addStream("MapStream " + System.currentTimeMillis(), currentOutputPort, m1.input);
     System.out.println("MAP "+cloneDag.toString()+" \n"+currentOutputPort+" "+m1.input);
