@@ -34,6 +34,14 @@ public class FileReadOperator extends AbstractFileInputOperator<String>  {
     }
     private boolean sentControl = false;
 
+    public DefaultOutputPortSerializable getOutput() {
+        return output;
+    }
+
+    public void setOutput(DefaultOutputPortSerializable output) {
+        this.output = output;
+    }
+
     public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
     @Override

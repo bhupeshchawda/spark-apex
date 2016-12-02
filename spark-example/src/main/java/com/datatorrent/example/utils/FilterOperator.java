@@ -4,9 +4,10 @@ import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.common.util.BaseOperator;
 
+import com.datatorrent.example.MyBaseOperator;
 import scala.Function1;
 
-public class FilterOperator extends BaseOperator
+public class FilterOperator extends MyBaseOperator
 {
   public Function1 f;
   public final transient DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {

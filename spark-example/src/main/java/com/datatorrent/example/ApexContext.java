@@ -1,5 +1,6 @@
 package com.datatorrent.example;
 
+import com.datatorrent.example.utils.BaseInputOperator;
 import com.datatorrent.example.utils.DefaultOutputPortSerializable;
 import com.datatorrent.example.utils.FileReadOperator;
 import com.datatorrent.example.utils.FileReaderOperator;
@@ -22,10 +23,10 @@ public class ApexContext extends SparkContext
   public RDD<String> textFile(String path, int minPartitions)
   {
     ApexRDD rdd = new ApexRDD<String>(this);
-    FileReadOperator fileInput = rdd.getDag().addOperator("Input "+System.currentTimeMillis(), FileReadOperator.class);
-    fileInput.setDirectory(path);
-    fileInput.setPartitionCount(minPartitions);
-    rdd.currentOperator = fileInput;
+    BaseInputOperator fileInput = rdd.getDag().addOperator("Input "+System.currentTimeMillis(), BaseInputOperator.class);
+   // fileInput.setDirectory(path);
+    //fileInput.setPartitionCount(minPartitions);
+    rdd.currentOperator =  fileInput;
     rdd.currentOperatorType = ApexRDD.OperatorType.INPUT;
     rdd.currentOutputPort =  fileInput.output;
     rdd.controlOutput =fileInput.controlOut;

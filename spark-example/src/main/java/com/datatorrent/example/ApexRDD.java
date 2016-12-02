@@ -17,9 +17,9 @@ import scala.tools.nsc.transform.patmat.Logic;
 public class ApexRDD<T> extends RDD<T>
 {
   private static final long serialVersionUID = -3545979419189338756L;
-  public   Operator currentOperator;
+  public   MyBaseOperator currentOperator;
   public   OperatorType currentOperatorType;
-  public DefaultOutputPort<Object> currentOutputPort;
+  public DefaultOutputPortSerializable<Object> currentOutputPort;
   public  DefaultOutputPortSerializable<Boolean> controlOutput;
   private DAG dag;
   public ApexRDD(RDD<T> rdd, ClassTag<T> classTag)
@@ -67,7 +67,8 @@ public class ApexRDD<T> extends RDD<T>
 //    Operator.OutputPort<Object> op = null;
 //    System.out.println(cloneDag.getAllStreams().size());
 
-    cloneDag.addStream("MapStream " + System.currentTimeMillis(), currentOutputPort, m1.input);
+
+    cloneDag.addStream("MapStream " + System.currentTimeMillis(),currentOperator.getOutputPort(), m1.input);
     System.out.println("MAP "+cloneDag.toString()+" \n"+currentOutputPort+" "+m1.input);
     currentOutputPort=m1.output;
     currentOperator=m1;
@@ -83,7 +84,7 @@ public class ApexRDD<T> extends RDD<T>
     System.out.println("FILTER "+cloneDag.toString());
     FilterOperator filterOperator = cloneDag.addOperator("Filter " + System.currentTimeMillis(), FilterOperator.class);
     filterOperator.f = f;
-    try {
+ /*   try {
       if(filterOperator.isInputPortOpen) {
 
 
@@ -96,7 +97,7 @@ public class ApexRDD<T> extends RDD<T>
 
     } catch (Exception e) {
       e.printStackTrace();
-    }
+    }*/
     System.out.println(currentOutputPort+"\t"+filterOperator.input);
     cloneDag.addStream("FilterStream " + System.currentTimeMillis() + 1, currentOutputPort, filterOperator.input);
     currentOutputPort = filterOperator.output;
@@ -135,8 +136,8 @@ public class ApexRDD<T> extends RDD<T>
     } catch (Exception e) {
       e.printStackTrace();
     }
-    currentOperator =r1;
-    r1.f = f;
+    //currentOperator =r1;
+    //r1.f = f;
 
     LocalMode lma=LocalMode.newInstance();
     Configuration conf = new Configuration(false);
