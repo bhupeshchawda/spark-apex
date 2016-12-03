@@ -6,7 +6,9 @@ import com.datatorrent.common.util.BaseOperator;
 
 import scala.Function2;
 
-public class ReduceOperator extends BaseOperator
+import java.io.Serializable;
+
+public class ReduceOperator extends BaseOperator implements Serializable
 {
   public Function2 f;
   public Object previousValue = null;

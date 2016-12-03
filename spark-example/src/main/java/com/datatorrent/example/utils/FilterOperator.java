@@ -1,12 +1,16 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.example.MyBaseOperator;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import scala.Function1;
 
-public class FilterOperator extends MyBaseOperator
+import java.io.Serializable;
+@DefaultSerializer(JavaSerializer.class)
+public class FilterOperator extends MyBaseOperator implements Serializable
 {
   public Function1 f;
-  public final transient DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
+  public final  DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
     {
@@ -16,7 +20,7 @@ public class FilterOperator extends MyBaseOperator
       }
     }
   };
-  public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
+  public final  DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
   public DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }
