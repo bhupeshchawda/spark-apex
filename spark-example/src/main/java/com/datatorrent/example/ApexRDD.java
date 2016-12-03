@@ -6,29 +6,24 @@ import com.datatorrent.api.Operator;
 import com.datatorrent.api.StreamingApplication;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
-import com.datatorrent.stram.plan.logical.Operators;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
 import org.apache.spark.TaskContext;
 import org.apache.spark.rdd.RDD;
-import org.junit.Assert;
+import org.apache.spark.storage.StorageLevel;
 import scala.Function1;
 import scala.Function2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-
 public class ApexRDD<T> extends RDD<T> {
     private static final long serialVersionUID = -3545979419189338756L;
     public MyBaseOperator currentOperator;
     public OperatorType currentOperatorType;
-    public DefaultOutputPortSerializable<Object> currentOutputPort;
+    public DefaultOutputPortSerializable currentOutputPort;
     public DefaultOutputPortSerializable<Boolean> controlOutput;
-    private DAG dag;
+    private MyDAG dag;
 
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
@@ -36,74 +31,60 @@ public class ApexRDD<T> extends RDD<T> {
 
     public ApexRDD(ApexContext ac) {
         super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
-        dag = new LogicalPlan();
+        dag = new MyDAG();
 
     }
 
-    public DAG getDag() {
+    public MyDAG getDag() {
         return dag;
     }
-
+    public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
+        currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
+        return currentOperator.getOutputPort();
+    }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
-        LogicalPlan cloneDag = (LogicalPlan) SerializationUtils.clone(dag);
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        currentOutputPort= getCurrentOutputPort(cloneDag);
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
-        System.out.println("CloneDag " + cloneDag.toString());
-        System.out.println("Dag " + dag.toString());
-        for (LogicalPlan.OperatorMeta o : cloneDag.getAllOperators()) {
-            System.out.println("Clone Dag Operators \t "+ o.getOperator());
-            currentOutputPort = ((MyBaseOperator) o.getOperator()).getOutputPort();
-        }
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         currentOutputPort = m1.output;
-        currentOperator = m1;
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
-//        ObjectOutputStream out = null;
-//        try {
-//            out = new ObjectOutputStream(baos);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        try {
-//            out.writeObject(currentOutputPort);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        Assert.assertTrue(false);
+//        currentOperator = m1;
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag = (LogicalPlan) SerializationUtils.clone(cloneDag);
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;
     }
 
     @Override
     public RDD<T> filter(Function1<T, Object> f) {
-        LogicalPlan cloneDag = (LogicalPlan) SerializationUtils.clone(dag);
-        System.out.println("FILTER " + cloneDag.toString());
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
+        currentOutputPort=getCurrentOutputPort(cloneDag);
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = f;
-
-        for (LogicalPlan.OperatorMeta o : cloneDag.getAllOperators()) {
-            System.out.println("Clone Dag Operators in Filter \t "+ o.getOperator());
-            currentOutputPort = ((MyBaseOperator) o.getOperator()).getOutputPort();
-        }
-
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
         currentOutputPort = filterOperator.output;
-        currentOperator = filterOperator;
-        System.out.println(currentOutputPort + "\t" + filterOperator.input);
+//        currentOperator = filterOperator;
         ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
-        temp.dag = (LogicalPlan) SerializationUtils.clone(cloneDag);
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;
     }
 
+    @Override
+    public RDD<T> persist(StorageLevel newLevel) {
+
+        return super.persist(newLevel);
+    }
 
     @Override
     public T reduce(Function2<T, T, T> f) {
-        LogicalPlan cloneDag = (LogicalPlan) SerializationUtils.clone(dag);
+        System.out.println("We are in reduce");
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
+        currentOutputPort = getCurrentOutputPort(cloneDag);
         ReduceOperator r1 = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , ReduceOperator.class);
         FileWriterOperator fileWriterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " FileWriter ", FileWriterOperator.class);
         fileWriterOperator.setAbsoluteFilePath("/tmp/");
+
         try {
             if (r1.isControlInputOpen) {
                 cloneDag.addStream(System.currentTimeMillis()+  " Control Done" , controlOutput, r1.controlDone);
@@ -124,7 +105,7 @@ public class ApexRDD<T> extends RDD<T> {
         }
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
-        final LogicalPlan d = (LogicalPlan) getDag();
+        final LogicalPlan d = (MyDAG) getDag();
 
         StreamingApplication app = new StreamingApplication() {
             public void populateDAG(DAG dag, Configuration conf) {
@@ -144,7 +125,7 @@ public class ApexRDD<T> extends RDD<T> {
         try {
             lma.prepareDAG(app, conf);
 //      System.out.println("Dag Set in lma: " + lma.getDAG());
-            ((LogicalPlan) lma.getDAG()).validate();
+            ((MyDAG) lma.getDAG()).validate();
 
         } catch (Exception e) {
             e.printStackTrace();

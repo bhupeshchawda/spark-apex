@@ -1,22 +1,11 @@
 package com.datatorrent.example;
 
 
-import java.io.Serializable;
-
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.mllib.classification.NaiveBayes;
-import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
-
-import scala.Tuple2;
 import scala.reflect.ClassTag;
+
+import java.io.Serializable;
 
 public class TestNaiveBayes implements Serializable
 {
@@ -27,16 +16,16 @@ public class TestNaiveBayes implements Serializable
   }
   public TestNaiveBayes(ApexContext sc)
   {
-    String path = "src/main/resources/data/sample_libsvm_data.txt";
+    String path = "file:////home/anurag/spark-master/data/mllib/sample_libsvm_data.txt";
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData.count());
 //    JavaRDD<LabeledPoint>[] tmp = inputData.randomSplit(new double[]{0.6, 0.4});
 //    ApexRDD<LabeledPoint> training = new ApexRDD<LabeledPoint>(tmp[0].rdd(), tag); // training set
-//    ApexRDD<LabeledPoint> test = new ApexRDD<LabeledPoint>(tmp[1].rdd(), tag); // test set
+//    ApexRDD<LabeledPoint> getCurrentOutputPort = new ApexRDD<LabeledPoint>(tmp[1].rdd(), tag); // getCurrentOutputPort set
 //    final NaiveBayesModel model = NaiveBayes.train(training.rdd(), 1.0);
 //    JavaPairRDD<Double, Double> predictionAndLabel =
-//        test.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
+//        getCurrentOutputPort.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
 //          @Override
 //          public Tuple2<Double, Double> call(LabeledPoint p) {
 //            return new Tuple2<>(model.predict(p.features()), p.label());
@@ -47,7 +36,7 @@ public class TestNaiveBayes implements Serializable
 //        public Boolean call(Tuple2<Double, Double> pl) {
 //          return pl._1().equals(pl._2());
 //        }
-//      }).count() / (double) test.count();
+//      }).count() / (double) getCurrentOutputPort.count();
 //
 //      // Save and load model
 //      model.save(sc.sc(), "target/tmp/myNaiveBayesModel");

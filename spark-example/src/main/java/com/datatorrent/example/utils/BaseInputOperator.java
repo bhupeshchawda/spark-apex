@@ -9,11 +9,12 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 
 /**
  * Created by harsh on 2/12/16.
  */
-public class BaseInputOperator extends MyBaseOperator implements InputOperator {
+public class BaseInputOperator extends MyBaseOperator implements InputOperator,Serializable {
     public BaseInputOperator(){
 
     }
@@ -41,7 +42,7 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator {
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         try{
-            Path pt=new Path("hdfs://..");
+            Path pt=new Path("file:///home/anurag/spark-master/data/mllib/sample_libsvm_data.txt");
             FileSystem fs = FileSystem.get(new Configuration());
             BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(pt)));
             String line;
