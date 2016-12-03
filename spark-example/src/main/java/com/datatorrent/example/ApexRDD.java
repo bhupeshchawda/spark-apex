@@ -38,9 +38,14 @@ public class ApexRDD<T> extends RDD<T> {
     public MyDAG getDag() {
         return dag;
     }
+
     public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
         currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
         return currentOperator.getOutputPort();
+    }
+    public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
+        currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+        return currentOperator.getControlOut();
     }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
@@ -72,8 +77,7 @@ public class ApexRDD<T> extends RDD<T> {
 
     @Override
     public RDD<T> persist(StorageLevel newLevel) {
-
-        return super.persist(newLevel);
+        return this;
     }
 
     @Override
@@ -81,20 +85,24 @@ public class ApexRDD<T> extends RDD<T> {
         System.out.println("We are in reduce");
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         currentOutputPort = getCurrentOutputPort(cloneDag);
+        controlOutput= getControlOutput(cloneDag);
         ReduceOperator r1 = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , ReduceOperator.class);
         FileWriterOperator fileWriterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " FileWriter ", FileWriterOperator.class);
         fileWriterOperator.setAbsoluteFilePath("/tmp/");
 
         try {
             if (r1.isControlInputOpen) {
+                System.out.println("We are in reduce1");
                 cloneDag.addStream(System.currentTimeMillis()+  " Control Done" , controlOutput, r1.controlDone);
                 r1.isControlInputOpen = false;
             }
             if (r1.isInputPortOpen) {
+                System.out.println("We are in reduce2");
                 cloneDag.addStream(System.currentTimeMillis()+ " ReduceStream ", currentOutputPort, r1.input);
                 r1.isInputPortOpen = false;
             }
             if (r1.isOutputPortOpen) {
+                System.out.println("We are in reduce3");
                 cloneDag.addStream(System.currentTimeMillis()+ " File Write Stream",r1.output, fileWriterOperator.input);
                 r1.isOutputPortOpen = false;
             }
@@ -124,8 +132,8 @@ public class ApexRDD<T> extends RDD<T> {
         };
         try {
             lma.prepareDAG(app, conf);
-//      System.out.println("Dag Set in lma: " + lma.getDAG());
-            ((MyDAG) lma.getDAG()).validate();
+            System.out.println("Dag Set in lma: " + lma.getDAG());
+            ((LogicalPlan)lma.getDAG()).validate(); //(MyDAG)
 
         } catch (Exception e) {
             e.printStackTrace();

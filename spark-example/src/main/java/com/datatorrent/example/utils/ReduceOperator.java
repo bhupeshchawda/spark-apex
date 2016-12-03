@@ -4,11 +4,12 @@ import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.common.util.BaseOperator;
 
+import com.datatorrent.example.MyBaseOperator;
 import scala.Function2;
 
 import java.io.Serializable;
 
-public class ReduceOperator extends BaseOperator implements Serializable
+public class ReduceOperator extends MyBaseOperator implements Serializable
 {
   public Function2 f;
   public Object previousValue = null;
@@ -23,7 +24,7 @@ public class ReduceOperator extends BaseOperator implements Serializable
     }
   }
 
-  public final transient DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
+  public final  DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
     {
@@ -37,17 +38,26 @@ public class ReduceOperator extends BaseOperator implements Serializable
     }
   };
 
-  public final transient DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
+  public final  DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
     @Override
     public void process(Boolean tuple)
     {
       done = true;
     }
   };
-  public final transient DefaultOutputPortSerializable<Object> output = (DefaultOutputPortSerializable<Object>) new DefaultOutputPort<Object>();
-  public DefaultOutputPortSerializable<Object> getOutputPort(){
+  public final  DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
+  public  DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }
+
+  public DefaultInputPortSerializable getControlPort() {
+    return controlDone;
+  }
+
+  public DefaultOutputPortSerializable<Boolean> getControlOut() {
+    return null;
+  }
+
   public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }

@@ -19,7 +19,8 @@ public abstract class MyBaseOperator extends BaseOperator implements Serializabl
 
     public abstract DefaultInputPortSerializable<Object> getInputPort();
     public abstract DefaultOutputPortSerializable getOutputPort();
-    public  abstract DefaultOutputPortSerializable getControlPort();
+    public  abstract DefaultInputPortSerializable getControlPort();
+    public  abstract DefaultOutputPortSerializable<Boolean> getControlOut();
 
 
 }

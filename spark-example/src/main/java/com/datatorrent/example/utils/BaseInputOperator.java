@@ -29,8 +29,12 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
         return output;
     }
 
-    public DefaultOutputPortSerializable getControlPort() {
+    public DefaultInputPortSerializable getControlPort() {
         return null;
+    }
+
+    public DefaultOutputPortSerializable<Boolean> getControlOut() {
+        return controlOut;
     }
 
     public void emitTuples() {

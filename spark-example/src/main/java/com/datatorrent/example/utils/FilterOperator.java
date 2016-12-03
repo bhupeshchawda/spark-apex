@@ -25,7 +25,11 @@ public class FilterOperator extends MyBaseOperator implements Serializable
     return this.output;
   }
 
-  public DefaultOutputPortSerializable getControlPort() {
+  public DefaultInputPortSerializable getControlPort() {
+    return null;
+  }
+
+  public DefaultOutputPortSerializable<Boolean> getControlOut() {
     return null;
   }
 
