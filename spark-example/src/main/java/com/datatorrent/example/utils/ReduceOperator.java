@@ -1,9 +1,5 @@
 package com.datatorrent.example.utils;
 
-import com.datatorrent.api.DefaultInputPort;
-import com.datatorrent.api.DefaultOutputPort;
-import com.datatorrent.common.util.BaseOperator;
-
 import com.datatorrent.example.MyBaseOperator;
 import scala.Function2;
 
@@ -15,6 +11,9 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
   public Object previousValue = null;
   public Object finalValue = null;
   private boolean done = false;
+
+  public ReduceOperator() {
+  }
 
   @Override
   public void beginWindow(long windowId)

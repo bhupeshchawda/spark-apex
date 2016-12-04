@@ -86,23 +86,21 @@ public class ApexRDD<T> extends RDD<T> {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
-        ReduceOperator r1 = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , ReduceOperator.class);
+        ReduceOperator r1 = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
         FileWriterOperator fileWriterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " FileWriter ", FileWriterOperator.class);
         fileWriterOperator.setAbsoluteFilePath("/tmp/");
 
         try {
             if (r1.isControlInputOpen) {
-                System.out.println("We are in reduce1");
+
                 cloneDag.addStream(System.currentTimeMillis()+  " Control Done" , controlOutput, r1.controlDone);
                 r1.isControlInputOpen = false;
             }
             if (r1.isInputPortOpen) {
-                System.out.println("We are in reduce2");
                 cloneDag.addStream(System.currentTimeMillis()+ " ReduceStream ", currentOutputPort, r1.input);
                 r1.isInputPortOpen = false;
             }
             if (r1.isOutputPortOpen) {
-                System.out.println("We are in reduce3");
                 cloneDag.addStream(System.currentTimeMillis()+ " File Write Stream",r1.output, fileWriterOperator.input);
                 r1.isOutputPortOpen = false;
             }
@@ -113,7 +111,7 @@ public class ApexRDD<T> extends RDD<T> {
         }
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
-        final LogicalPlan d = (MyDAG) getDag();
+        final MyDAG d = cloneDag;
 
         StreamingApplication app = new StreamingApplication() {
             public void populateDAG(DAG dag, Configuration conf) {
