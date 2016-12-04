@@ -1,17 +1,17 @@
 package com.datatorrent.example;
 
-import com.datatorrent.api.DAG;
+import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
-import com.datatorrent.api.Operator;
-import com.datatorrent.api.StreamingApplication;
 import com.datatorrent.example.utils.*;
-import com.datatorrent.stram.plan.logical.LogicalPlan;
+import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
 import org.apache.spark.TaskContext;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
+import org.jblas.util.Random;
+import org.junit.Assert;
 import scala.Function1;
 import scala.Function2;
 import scala.collection.Iterator;
@@ -86,60 +86,36 @@ public class ApexRDD<T> extends RDD<T> {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
-        ReduceOperator r1 = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
-        FileWriterOperator fileWriterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " FileWriter ", FileWriterOperator.class);
-        fileWriterOperator.setAbsoluteFilePath("/tmp/");
+        ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
+        cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        reduceOperator.f = f;
 
-        try {
-            if (r1.isControlInputOpen) {
+        Assert.assertTrue(this.currentOutputPort != null);
+        cloneDag.addStream("S_"+System.currentTimeMillis()+ Random.nextInt(100), currentOutputPort, reduceOperator.input);
+        cloneDag.addStream("S_"+System.currentTimeMillis()+Random.nextInt(100), controlOutput, reduceOperator.controlDone);
 
-                cloneDag.addStream(System.currentTimeMillis()+  " Control Done" , controlOutput, r1.controlDone);
-                r1.isControlInputOpen = false;
-            }
-            if (r1.isInputPortOpen) {
-                cloneDag.addStream(System.currentTimeMillis()+ " ReduceStream ", currentOutputPort, r1.input);
-                r1.isInputPortOpen = false;
-            }
-            if (r1.isOutputPortOpen) {
-                cloneDag.addStream(System.currentTimeMillis()+ " File Write Stream",r1.output, fileWriterOperator.input);
-                r1.isOutputPortOpen = false;
-            }
+        FileWriterOperator writer = cloneDag.addOperator("Writer" + System.currentTimeMillis(), FileWriterOperator.class);
+        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/outputData");
 
+        cloneDag.addStream("S_"+System.currentTimeMillis()+Random.nextInt(100), reduceOperator.output, writer.input);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        System.out.println(cloneDag);
+        cloneDag.validate();
+        System.out.println("DAG successfully validated");
+
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
-        final MyDAG d = cloneDag;
-
-        StreamingApplication app = new StreamingApplication() {
-            public void populateDAG(DAG dag, Configuration conf) {
-                for (LogicalPlan.OperatorMeta o : d.getAllOperators()) {
-                    dag.addOperator(o.getName(), o.getOperator());
-                }
-                for (LogicalPlan.StreamMeta s : d.getAllStreams()) {
-                    for (LogicalPlan.InputPortMeta i : s.getSinks()) {
-                        Operator.OutputPort<Object> op = (Operator.OutputPort<Object>) s.getSource().getPortObject();
-                        Operator.InputPort<Object> ip = (Operator.InputPort<Object>) i.getPortObject();
-                        dag.addStream(s.getName(), op, ip);
-                    }
-                }
-
-            }
-        };
+//    conf.addResource(this.getClass().getResourceAsStream("/META-INF/properties.xml"));
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
         try {
             lma.prepareDAG(app, conf);
-            System.out.println("Dag Set in lma: " + lma.getDAG());
-            ((LogicalPlan)lma.getDAG()).validate(); //(MyDAG)
-
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Exception in prepareDAG", e);
         }
         LocalMode.Controller lc = lma.getController();
-        lc.setHeartbeatMonitoringEnabled(false);
-
-        lc.run(1000);
+        lc.run(10000);
         return (T) new Integer(1);
     }
 
