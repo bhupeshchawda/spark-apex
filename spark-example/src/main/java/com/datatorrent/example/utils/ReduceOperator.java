@@ -1,10 +1,12 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.example.MyBaseOperator;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import scala.Function2;
 
 import java.io.Serializable;
-
+@DefaultSerializer(JavaSerializer.class)
 public class ReduceOperator extends MyBaseOperator implements Serializable
 {
   public Function2 f;

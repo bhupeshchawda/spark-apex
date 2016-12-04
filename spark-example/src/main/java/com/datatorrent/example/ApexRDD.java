@@ -10,7 +10,6 @@ import org.apache.spark.Partition;
 import org.apache.spark.TaskContext;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
-import org.jblas.util.Random;
 import org.junit.Assert;
 import scala.Function1;
 import scala.Function2;
@@ -40,6 +39,7 @@ public class ApexRDD<T> extends RDD<T> {
     }
 
     public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
+//        Assert.assertTrue(cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()) != null);
         currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
         return currentOperator.getOutputPort();
     }
@@ -77,12 +77,17 @@ public class ApexRDD<T> extends RDD<T> {
 
     @Override
     public RDD<T> persist(StorageLevel newLevel) {
+//        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+//        currentOutputPort = getCurrentOutputPort(cloneDag);
+//        PersistOperator persistOperator=cloneDag.addOperator(System.currentTimeMillis()+" PersistOperator ",PersistOperator.class);
+//        cloneDag.addStream(System.currentTimeMillis()+ " PersistStream ",currentOutputPort,persistOperator.input);
+//        ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
+//        temp.dag= (MyDAG) SerializationUtils.clone(cloneDag);
         return this;
     }
 
     @Override
     public T reduce(Function2<T, T, T> f) {
-        System.out.println("We are in reduce");
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
@@ -91,14 +96,14 @@ public class ApexRDD<T> extends RDD<T> {
         reduceOperator.f = f;
 
         Assert.assertTrue(this.currentOutputPort != null);
-        cloneDag.addStream("S_"+System.currentTimeMillis()+ Random.nextInt(100), currentOutputPort, reduceOperator.input);
-        cloneDag.addStream("S_"+System.currentTimeMillis()+Random.nextInt(100), controlOutput, reduceOperator.controlDone);
+        cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
+        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
 
-        FileWriterOperator writer = cloneDag.addOperator("Writer" + System.currentTimeMillis(), FileWriterOperator.class);
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputData");
 
-        cloneDag.addStream("S_"+System.currentTimeMillis()+Random.nextInt(100), reduceOperator.output, writer.input);
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
         System.out.println(cloneDag);
         cloneDag.validate();

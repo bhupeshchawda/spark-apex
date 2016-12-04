@@ -21,16 +21,13 @@ public class MyDAG extends LogicalPlan implements Serializable{
     public static String lastOperatorName;
     public static String firstOperatorName;
 
-    public Stack<Operator> stack = new Stack<Operator>();
     public Stack<String> stackName = new Stack<String>();
 
     @Override
     public <T extends Operator> T addOperator(String name, T operator) {
-        stack.push(operator);
         stackName.push(name);
         lastOperatorName =name;
         firstOperatorName =stackName.firstElement();
-        System.out.println(firstOperatorName+ ": "+lastOperatorName);
         return super.addOperator(name,operator);
     }
 

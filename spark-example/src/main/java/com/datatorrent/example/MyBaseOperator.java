@@ -13,7 +13,9 @@ import java.io.Serializable;
  */
 @DefaultSerializer(JavaSerializer.class)
 public abstract class MyBaseOperator extends BaseOperator implements Serializable{
-    public MyBaseOperator(){}
+    public MyBaseOperator(){
+
+    }
 
 
 
