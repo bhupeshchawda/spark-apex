@@ -9,17 +9,18 @@ import java.util.Stack;
 /**
  * Created by anurag on 3/12/16.
  */
+
 public class MyDAG extends LogicalPlan implements Serializable{
-    public static String getLastOperatorName() {
+    public  String getLastOperatorName() {
         return lastOperatorName;
     }
 
-    public static String getFirstOperatorName() {
+    public  String getFirstOperatorName() {
         return firstOperatorName;
     }
 
-    public static String lastOperatorName;
-    public static String firstOperatorName;
+    public  String lastOperatorName;
+    public  String firstOperatorName;
 
     public Stack<String> stackName = new Stack<String>();
 

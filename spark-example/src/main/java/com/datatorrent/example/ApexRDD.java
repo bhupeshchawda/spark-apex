@@ -4,6 +4,7 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
+import com.datatorrent.stram.plan.logical.LogicalPlan;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -28,6 +29,8 @@ public class ApexRDD<T> extends RDD<T> {
         super(rdd, classTag);
     }
 
+
+
     public ApexRDD(ApexContext ac) {
         super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
         dag = new MyDAG();
@@ -35,23 +38,33 @@ public class ApexRDD<T> extends RDD<T> {
     }
 
     public MyDAG getDag() {
-        return dag;
+        return this.    dag;
     }
 
     public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
-//        Assert.assertTrue(cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()) != null);
-        currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
+
+        try {
+           MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
+            return currentOperator.getOutputPort();
+        } catch (Exception e) {
+            System.out.println("Operator "+cloneDag.getLastOperatorName()+" Doesn't exist in the dag");
+            e.printStackTrace();
+        }
         return currentOperator.getOutputPort();
     }
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
-        currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+        MyBaseOperator currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
-        currentOutputPort= getCurrentOutputPort(cloneDag);
+        if (dag.getLastOperatorName().contains("Persist")){
+            for(LogicalPlan.OperatorMeta o: dag.getAllOperators())
+                System.out.println(o.getOperator());
+        }
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         currentOutputPort = m1.output;
@@ -64,7 +77,7 @@ public class ApexRDD<T> extends RDD<T> {
     @Override
     public RDD<T> filter(Function1<T, Object> f) {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
-        currentOutputPort=getCurrentOutputPort(cloneDag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
@@ -77,25 +90,19 @@ public class ApexRDD<T> extends RDD<T> {
 
     @Override
     public RDD<T> persist(StorageLevel newLevel) {
-//        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
-//        currentOutputPort = getCurrentOutputPort(cloneDag);
-//        PersistOperator persistOperator=cloneDag.addOperator(System.currentTimeMillis()+" PersistOperator ",PersistOperator.class);
-//        cloneDag.addStream(System.currentTimeMillis()+ " PersistStream ",currentOutputPort,persistOperator.input);
-//        ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
-//        temp.dag= (MyDAG) SerializationUtils.clone(cloneDag);
         return this;
     }
 
     @Override
     public T reduce(Function2<T, T, T> f) {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
-        currentOutputPort = getCurrentOutputPort(cloneDag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
         cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         reduceOperator.f = f;
 
-        Assert.assertTrue(this.currentOutputPort != null);
+        Assert.assertTrue(currentOutputPort != null);
         cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
 
@@ -134,6 +141,12 @@ public class ApexRDD<T> extends RDD<T> {
     public Partition[] getPartitions() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public long count() {
+        System.out.println(this.count());
+        return super.count();
     }
 
     public enum OperatorType {
