@@ -69,9 +69,9 @@ public class ApexRDD<T> extends RDD<T> {
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         currentOutputPort = m1.output;
 //        currentOperator = m1;
-        ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
-        return temp;
+       // ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
+        this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        return (RDD<U>) this;
     }
 
     @Override
@@ -83,9 +83,9 @@ public class ApexRDD<T> extends RDD<T> {
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
         currentOutputPort = filterOperator.output;
 //        currentOperator = filterOperator;
-        ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
-        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
-        return temp;
+       // ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
+        this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        return this;
     }
 
     @Override
