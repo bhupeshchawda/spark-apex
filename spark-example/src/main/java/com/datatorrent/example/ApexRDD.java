@@ -67,9 +67,6 @@ public class ApexRDD<T> extends RDD<T> {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
-        currentOutputPort = m1.output;
-//        currentOperator = m1;
-       // ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return (RDD<U>) this;
     }
@@ -81,9 +78,6 @@ public class ApexRDD<T> extends RDD<T> {
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
-        currentOutputPort = filterOperator.output;
-//        currentOperator = filterOperator;
-       // ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
         this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return this;
     }
@@ -118,7 +112,6 @@ public class ApexRDD<T> extends RDD<T> {
 
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
-//    conf.addResource(this.getClass().getResourceAsStream("/META-INF/properties.xml"));
         GenericApplication app = new GenericApplication();
         app.setDag(cloneDag);
         try {
@@ -155,17 +148,3 @@ public class ApexRDD<T> extends RDD<T> {
         OUTPUT
     }
 }
- /*   try {
-      if(filterOperator.isInputPortOpen) {
-
-
-        filterOperator.isInputPortOpen = false;
-        }
-        if(filterOperator.isOutputPortOpen) {
-
-          filterOperator.isOutputPortOpen=false;
-        }
-
-    } catch (Exception e) {
-      e.printStackTrace();
-    }*/

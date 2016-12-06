@@ -23,8 +23,6 @@ public class ApexContext extends SparkContext
   {
     ApexRDD rdd = new ApexRDD<String>(this);
     BaseInputOperator fileInput = rdd.getDag().addOperator(System.currentTimeMillis()+ " Input ", BaseInputOperator.class);
-   // fileInput.setDirectory(path);
-    //fileInput.setPartitionCount(minPartitions);
     rdd.currentOperator =  fileInput;
     rdd.currentOperatorType = ApexRDD.OperatorType.INPUT;
     rdd.currentOutputPort =  fileInput.output;

@@ -18,8 +18,6 @@ public class TestNaiveBayes implements Serializable
   {
     String path = "file:////home/anurag/spark-master/data/mllib/sample_libsvm_data.txt";
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-    ApexRDD<LabeledPoint> newRDD= new ApexRDD<LabeledPoint>(sc);
-    sc= (ApexContext) newRDD.context();
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData);
 //    JavaRDD<LabeledPoint>[] tmp = inputData.randomSplit(new double[]{0.6, 0.4});
