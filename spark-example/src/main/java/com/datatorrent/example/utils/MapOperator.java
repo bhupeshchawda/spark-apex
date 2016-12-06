@@ -11,6 +11,8 @@ public class MapOperator extends MyBaseOperator implements Serializable
 {
 
   public Function1 f;
+  public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
+
   public   DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)
@@ -18,7 +20,7 @@ public class MapOperator extends MyBaseOperator implements Serializable
       output.emit(f.apply(tuple));
     }
   };
-  public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
+
   public DefaultOutputPortSerializable<Object> getOutputPort(){
     return this.output;
   }

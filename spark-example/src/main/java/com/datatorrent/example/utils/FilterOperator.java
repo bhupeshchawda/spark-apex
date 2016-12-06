@@ -14,7 +14,6 @@ public class FilterOperator extends MyBaseOperator implements Serializable
     @Override
     public void process(Object tuple)
     {
-
       if((Boolean) f.apply(tuple)) {
         output.emit(tuple);
       }

@@ -12,13 +12,10 @@ import java.io.Serializable;
  * Created by harsh on 2/12/16.
  */
 @DefaultSerializer(JavaSerializer.class)
-public abstract class MyBaseOperator extends BaseOperator implements Serializable{
+public abstract class MyBaseOperator extends BaseOperator implements  Serializable{
     public MyBaseOperator(){
 
     }
-
-
-
     public abstract DefaultInputPortSerializable<Object> getInputPort();
     public abstract DefaultOutputPortSerializable getOutputPort();
     public  abstract DefaultInputPortSerializable getControlPort();

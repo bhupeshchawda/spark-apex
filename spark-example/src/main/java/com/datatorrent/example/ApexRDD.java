@@ -4,7 +4,6 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
-import com.datatorrent.stram.plan.logical.LogicalPlan;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -16,6 +15,8 @@ import scala.Function1;
 import scala.Function2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
+
+import java.util.Random;
 
 public class ApexRDD<T> extends RDD<T> {
     private static final long serialVersionUID = -3545979419189338756L;
@@ -53,22 +54,19 @@ public class ApexRDD<T> extends RDD<T> {
         return currentOperator.getOutputPort();
     }
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
-        MyBaseOperator currentOperator= (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+        BaseInputOperator currentOperator= (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
-        if (dag.getLastOperatorName().contains("Persist")){
-            for(LogicalPlan.OperatorMeta o: dag.getAllOperators())
-                System.out.println(o.getOperator());
-        }
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
+        m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
-        return (RDD<U>) this;
+        return (ApexRDD<U>) this;
     }
 
     @Override
@@ -86,6 +84,17 @@ public class ApexRDD<T> extends RDD<T> {
     public RDD<T> persist(StorageLevel newLevel) {
         return this;
     }
+    public RDD<T>[] randomSplit(double[] weights){
+        return randomSplit(weights, new Random().nextLong());
+    }
+    @Override
+    public RDD<T>[] randomSplit(double[] weights, long seed){
+        RDD<T>[] temp = super.randomSplit(weights, seed);
+        for(RDD<T> t: temp){
+            System.out.println((ApexRDD<T>)t);
+        }
+        return temp;
+    }
 
     @Override
     public T reduce(Function2<T, T, T> f) {
@@ -102,7 +111,7 @@ public class ApexRDD<T> extends RDD<T> {
 
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputData");
+        writer.setAbsoluteFilePath("target/tmp/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
@@ -120,7 +129,8 @@ public class ApexRDD<T> extends RDD<T> {
             throw new RuntimeException("Exception in prepareDAG", e);
         }
         LocalMode.Controller lc = lma.getController();
-        lc.run(10000);
+        lc.run(30000);
+
         return (T) new Integer(1);
     }
 
@@ -136,11 +146,7 @@ public class ApexRDD<T> extends RDD<T> {
         return null;
     }
 
-    @Override
-    public long count() {
-        System.out.println(this.count());
-        return super.count();
-    }
+
 
     public enum OperatorType {
         INPUT,

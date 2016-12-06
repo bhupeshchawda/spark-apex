@@ -3,18 +3,20 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
 import com.datatorrent.example.MyBaseOperator;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 
 /**
  * Created by harsh on 2/12/16.
  */
+
 public class BaseInputOperator extends MyBaseOperator implements InputOperator,Serializable {
+    private BufferedReader br;
+
     public BaseInputOperator(){
 
     }
@@ -41,20 +43,32 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
 
     }
 
+    @Override
+    public void beginWindow(long windowId) {
+        super.beginWindow(windowId);
+        try {
+            String line = br.readLine();
+            if (line != null) {
+                output.emit(line);
+            }
+            else {
+                controlOut.emit(true);
+            }
+        }
+        catch (Exception o){
+
+        }
+    }
 
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         try{
-            Path pt=new Path("file:///home/anurag/spark-master/data/mllib/sample_libsvm_data.txt");
-            FileSystem fs = FileSystem.get(new Configuration());
-            BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(pt)));
-            String line;
-            line=br.readLine();
-            while (line != null){
-                System.out.println(line);
-                line=br.readLine();
-            }
+            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+            FileInputStream fs = new FileInputStream("/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+            br=new BufferedReader(new InputStreamReader(fs));
+
+
         }catch(Exception e){
             e.printStackTrace();
         }

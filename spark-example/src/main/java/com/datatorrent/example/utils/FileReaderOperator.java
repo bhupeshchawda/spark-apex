@@ -12,7 +12,6 @@ public class FileReaderOperator extends LineByLineFileInputOperator
     public void beginWindow(long windowId)
     {
         super.beginWindow(windowId);
-
         if (pendingFiles.isEmpty() && !sentControl) {
             controlOut.emit(true);
             sentControl = true;

@@ -20,7 +20,7 @@ public class TestNaiveBayes implements Serializable
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData);
-//    JavaRDD<LabeledPoint>[] tmp = inputData.randomSplit(new double[]{0.6, 0.4});
+//    ApexRDD<LabeledPoint>[] tmp = (ApexRDD<LabeledPoint>[]) inputData.randomSplit(new double[]{0.6, 0.4});
 //    ApexRDD<LabeledPoint> training = new ApexRDD<LabeledPoint>(tmp[0].rdd(), tag); // training set
 //    ApexRDD<LabeledPoint> getCurrentOutputPort = new ApexRDD<LabeledPoint>(tmp[1].rdd(), tag); // getCurrentOutputPort set
 //    final NaiveBayesModel model = NaiveBayes.train(training.rdd(), 1.0);
