@@ -17,6 +17,7 @@ public class MapOperator extends MyBaseOperator implements Serializable
     @Override
     public void process(Object tuple)
     {
+//      System.out.println("Tuple :" +tuple);
       output.emit(f.apply(tuple));
     }
   };

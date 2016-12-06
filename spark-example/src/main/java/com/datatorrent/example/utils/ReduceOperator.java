@@ -30,12 +30,13 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
     public void process(Object tuple)
     {
       if (previousValue == null) {
-//        previousValue = tuple;
+        previousValue = tuple;
         finalValue = tuple;
       } else {
-        finalValue = f.apply(finalValue, previousValue);
+          previousValue = tuple;
+          finalValue = f.apply(finalValue, previousValue);
       }
-      System.out.println("Mystery of 657 "+finalValue.toString());
+
     }
   };
 

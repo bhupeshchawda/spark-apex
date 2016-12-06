@@ -64,8 +64,8 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         try{
-            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
-            FileInputStream fs = new FileInputStream("/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+//            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+            FileInputStream fs = new FileInputStream("/home/krushika/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
             br=new BufferedReader(new InputStreamReader(fs));
 
 

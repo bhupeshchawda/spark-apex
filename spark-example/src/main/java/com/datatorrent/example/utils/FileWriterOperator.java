@@ -47,8 +47,6 @@ public class FileWriterOperator extends BaseOperator
         public void process(Object tuple)
         {
             try {
-                System.out.println("This is the tuple we want "+tuple.toString());
-
                 try{
                     bw.write(tuple.toString());
                 }catch (Exception e){
