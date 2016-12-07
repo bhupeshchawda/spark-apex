@@ -15,15 +15,11 @@ import java.io.Serializable;
 
 public class BaseInputOperator extends MyBaseOperator implements InputOperator,Serializable {
     private BufferedReader br;
+    public String path;
 
     public BaseInputOperator(){
 
     }
-
-    public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
-        return null;
-    }
-
     public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
     public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
@@ -71,7 +67,7 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
         super.setup(context);
         try{
 //            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
-            FileInputStream fs = new FileInputStream("/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+            FileInputStream fs = new FileInputStream(path);
             br=new BufferedReader(new InputStreamReader(fs));
 
 

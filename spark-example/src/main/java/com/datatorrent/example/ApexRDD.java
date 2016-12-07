@@ -18,6 +18,10 @@ import scala.Function2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 public class ApexRDD<T> extends RDD<T> {
     private static final long serialVersionUID = -3545979419189338756L;
     public MyBaseOperator currentOperator;
@@ -134,9 +138,37 @@ public class ApexRDD<T> extends RDD<T> {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(10000);
-
-        return (T) new Integer(1);
+        Integer reduce = fileReader("/tmp/outputData");
+        return (T) reduce;
     }
+
+    public Integer fileReader(String path){
+        BufferedReader br = null;
+        FileReader fr = null;
+        try{
+            fr = new FileReader(path);
+            br = new BufferedReader(fr);
+            String line;
+            br = new BufferedReader(new FileReader(path));
+            while((line = br.readLine())!=null){
+                return Integer.valueOf(line);
+            }
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }finally {
+            try{
+                if(br!=null)
+                    br.close();
+                if(fr!=null)
+                    fr.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+
 
     @Override
     public Iterator<T> compute(Partition arg0, TaskContext arg1) {
@@ -181,7 +213,8 @@ public class ApexRDD<T> extends RDD<T> {
         LocalMode.Controller lc = lma.getController();
         lc.run(10000);
 
-        return 1;
+        Integer count = fileReader("/tmp/outputDataCount");
+        return count;
     }
 
 

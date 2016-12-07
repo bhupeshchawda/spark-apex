@@ -34,9 +34,11 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
     public void process(Object tuple)
     {
       if (previousValue == null) {
+//          System.out.println("Reduce Operator - Tuple "+tuple);
         previousValue = tuple;
         finalValue = tuple;
       } else {
+//          System.out.println("Reduce Operator - Tuple "+tuple);
           previousValue = tuple;
           finalValue = f.apply(finalValue, previousValue);
       }

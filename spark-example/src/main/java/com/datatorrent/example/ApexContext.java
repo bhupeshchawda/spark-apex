@@ -28,6 +28,8 @@ public class ApexContext extends SparkContext
     rdd.currentOperatorType = ApexRDD.OperatorType.INPUT;
     rdd.currentOutputPort =  fileInput.output;
     rdd.controlOutput =fileInput.controlOut;
+    fileInput.path = path;
+
     return rdd;
   }
 }
