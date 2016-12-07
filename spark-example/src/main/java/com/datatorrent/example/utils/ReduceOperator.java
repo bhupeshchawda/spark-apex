@@ -17,7 +17,11 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
   public ReduceOperator() {
   }
 
-  @Override
+    public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
+        return null;
+    }
+
+    @Override
   public void beginWindow(long windowId)
   {
     if (done) {

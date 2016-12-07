@@ -3,7 +3,6 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
 import com.datatorrent.example.MyBaseOperator;
-import org.apache.hadoop.fs.Path;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -20,6 +19,11 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public BaseInputOperator(){
 
     }
+
+    public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
+        return null;
+    }
+
     public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
     public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
@@ -38,25 +42,27 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public DefaultOutputPortSerializable<Boolean> getControlOut() {
         return controlOut;
     }
-
+    public boolean sent=false;
     public void emitTuples() {
-
-    }
-
-    @Override
-    public void beginWindow(long windowId) {
-        super.beginWindow(windowId);
         try {
             String line = br.readLine();
             if (line != null) {
                 output.emit(line);
+
             }
             else {
-                controlOut.emit(true);
+                sent=true;
             }
         }
         catch (Exception o){
 
+        }
+    }
+    @Override
+    public void beginWindow(long windowId) {
+        super.beginWindow(windowId);
+        if(sent){
+            controlOut.emit(true);
         }
     }
 
@@ -65,7 +71,7 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
         super.setup(context);
         try{
 //            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
-            FileInputStream fs = new FileInputStream("/home/krushika/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
+            FileInputStream fs = new FileInputStream("/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
             br=new BufferedReader(new InputStreamReader(fs));
 
 

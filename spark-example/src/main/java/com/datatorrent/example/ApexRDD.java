@@ -11,12 +11,12 @@ import org.apache.spark.TaskContext;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Function1;
 import scala.Function2;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
-
-import java.util.Random;
 
 public class ApexRDD<T> extends RDD<T> {
     private static final long serialVersionUID = -3545979419189338756L;
@@ -24,10 +24,11 @@ public class ApexRDD<T> extends RDD<T> {
     public OperatorType currentOperatorType;
     public DefaultOutputPortSerializable currentOutputPort;
     public DefaultOutputPortSerializable<Boolean> controlOutput;
-    private MyDAG dag;
+    public  MyDAG dag;
 
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
+        this.dag=((ApexRDD<T>)rdd).dag;
     }
 
 
@@ -37,14 +38,15 @@ public class ApexRDD<T> extends RDD<T> {
         dag = new MyDAG();
 
     }
-
+    Logger log = LoggerFactory.getLogger(ApexRDD.class);
     public MyDAG getDag() {
-        return this.    dag;
+        return this.dag;
     }
 
     public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
 
         try {
+            log.info("Last operator in the Dag {}",dag.getLastOperatorName());
            MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
             return currentOperator.getOutputPort();
         } catch (Exception e) {
@@ -57,6 +59,8 @@ public class ApexRDD<T> extends RDD<T> {
         BaseInputOperator currentOperator= (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
+
+
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
@@ -65,7 +69,7 @@ public class ApexRDD<T> extends RDD<T> {
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
-        this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        this.dag =  cloneDag;
         return (ApexRDD<U>) this;
     }
 
@@ -76,7 +80,8 @@ public class ApexRDD<T> extends RDD<T> {
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
-        this.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        this.dag = cloneDag;
+
         return this;
     }
 
@@ -84,17 +89,17 @@ public class ApexRDD<T> extends RDD<T> {
     public RDD<T> persist(StorageLevel newLevel) {
         return this;
     }
-    public RDD<T>[] randomSplit(double[] weights){
-        return randomSplit(weights, new Random().nextLong());
-    }
-    @Override
-    public RDD<T>[] randomSplit(double[] weights, long seed){
-        RDD<T>[] temp = super.randomSplit(weights, seed);
-        for(RDD<T> t: temp){
-            System.out.println((ApexRDD<T>)t);
-        }
-        return temp;
-    }
+//    public RDD<T>[] randomSplit(double[] weights){
+//        return randomSplit(weights, new Random().nextLong());
+//    }
+//    @Override
+//    public RDD<T>[] randomSplit(double[] weights, long seed){
+//        RDD<T>[] temp = super.randomSplit(weights, seed);
+//        for(RDD<T> t: temp){
+//            System.out.println((ApexRDD<T>)t);
+//        }
+//        return temp;
+//    }
 
     @Override
     public T reduce(Function2<T, T, T> f) {
@@ -111,13 +116,12 @@ public class ApexRDD<T> extends RDD<T> {
 
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("target/tmp/outputData");
+        writer.setAbsoluteFilePath("/tmp/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
-        System.out.println(cloneDag);
         cloneDag.validate();
-        System.out.println("DAG successfully validated");
+        log.info("DAG successfully validated");
 
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
@@ -129,7 +133,7 @@ public class ApexRDD<T> extends RDD<T> {
             throw new RuntimeException("Exception in prepareDAG", e);
         }
         LocalMode.Controller lc = lma.getController();
-        lc.run(30000);
+        lc.run(10000);
 
         return (T) new Integer(1);
     }
@@ -145,7 +149,40 @@ public class ApexRDD<T> extends RDD<T> {
         // TODO Auto-generated method stub
         return null;
     }
+    @Override
+    public long count() {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
 
+        DefaultOutputPortSerializable currentCountOutputPort = getCurrentOutputPort(cloneDag);
+        controlOutput= getControlOutput(cloneDag);
+        CountOperator countOperator = cloneDag.addOperator(System.currentTimeMillis()+ " CountOperator " , CountOperator.class);
+        cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+" Count Input Stream", currentCountOutputPort, countOperator.input);
+        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
+//
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/outputDataCount");
+//
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
+
+         cloneDag.validate();
+        log.info("DAG successfully validated");
+
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(10000);
+
+        return 1;
+    }
 
 
     public enum OperatorType {

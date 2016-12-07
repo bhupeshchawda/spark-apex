@@ -24,7 +24,7 @@ public class FileWriterOperator extends BaseOperator
     @Override
     public void setup(OperatorContext context)
     {
-        System.out.println("We are in filewriter");
+
         Configuration configuration = new Configuration();
         try {
 //      hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
@@ -35,7 +35,7 @@ public class FileWriterOperator extends BaseOperator
 ////                hdfs.delete(file, true);
 //            }
 //            OutputStream os = hdfs.create(file);
-            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/tmp/outputData")));
+            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(absoluteFilePath)));
         } catch (Exception e) {
             throw new RuntimeException();
         }
@@ -50,7 +50,7 @@ public class FileWriterOperator extends BaseOperator
                 try{
                     bw.write(tuple.toString());
                 }catch (Exception e){
-                    bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("/tmp/outputData")));
+                    bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(absoluteFilePath)));
                     bw.write(tuple.toString());
                 }
                 bw.close();

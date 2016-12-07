@@ -32,7 +32,11 @@ public class FilterOperator extends MyBaseOperator implements Serializable
     return null;
   }
 
-  public DefaultInputPortSerializable<Object> getInputPort(){
+    public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
+        return null;
+    }
+
+    public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }
   public boolean isInputPortOpen=true;
