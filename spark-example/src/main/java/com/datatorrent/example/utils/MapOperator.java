@@ -4,36 +4,39 @@ import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Function1;
 
 import java.io.Serializable;
 
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator extends MyBaseOperator implements Serializable {
+public class MapOperator<T> extends MyBaseOperator implements Serializable {
 
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
 
     }
-
+    Logger log = LoggerFactory.getLogger(MapOperator.class);
     public Function1 f;
-    public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
-    public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
+    public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
+    public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
-        public void process(Object tuple) {
+        public void process(T tuple) {
                 try {
-                    output.emit(f.apply(tuple));
+                    output.emit((T) f.apply(tuple));
                 }
                 catch (Exception e){
-                    output.emit(new Integer(1));
+                    log.info("Exception Occured Due to {} ",tuple);
+                    output.emit(tuple);
                 }
 
         }
     };
 
 
-    public DefaultOutputPortSerializable<Object> getOutputPort() {
+    public DefaultOutputPortSerializable<T> getOutputPort() {
         return this.output;
     }
 
@@ -46,7 +49,7 @@ public class MapOperator extends MyBaseOperator implements Serializable {
     }
 
     public DefaultInputPortSerializable<Object> getInputPort() {
-        return this.input;
+        return (DefaultInputPortSerializable<Object>) this.input;
     }
 
     public boolean isInputPortOpen = true;

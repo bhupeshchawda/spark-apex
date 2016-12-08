@@ -15,8 +15,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
     public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
         @Override
         public void process(Object tuple) {
-                System.out.println(tuple);
-                System.out.println(tuple.hashCode());
+
             if(done){
                 output.emit(tuple);
             }

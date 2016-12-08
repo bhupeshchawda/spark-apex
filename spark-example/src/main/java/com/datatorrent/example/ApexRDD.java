@@ -21,6 +21,7 @@ import scala.reflect.ClassTag;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Random;
 
 public class ApexRDD<T> extends RDD<T> {
     private static final long serialVersionUID = -3545979419189338756L;
@@ -93,17 +94,10 @@ public class ApexRDD<T> extends RDD<T> {
     public RDD<T> persist(StorageLevel newLevel) {
         return this;
     }
-//    public RDD<T>[] randomSplit(double[] weights){
-//        return randomSplit(weights, new Random().nextLong());
-//    }
-//    @Override
-//    public RDD<T>[] randomSplit(double[] weights, long seed){
-//        RDD<T>[] temp = super.randomSplit(weights, seed);
-//        for(RDD<T> t: temp){
-//            System.out.println((ApexRDD<T>)t);
-//        }
-//        return temp;
-//    }
+    public RDD<T>[] randomSplit(double[] weights){
+        return randomSplit(weights, new Random().nextLong());
+    }
+
 
     @Override
     public T reduce(Function2<T, T, T> f) {
@@ -217,7 +211,8 @@ public class ApexRDD<T> extends RDD<T> {
         return count;
     }
 
-    public ApexRDD<T>[] randomSplit(double[] doubles) {
+    @Override
+    public ApexRDD<T>[] randomSplit(double[] weights, long seed){
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentSplitOutputPort = getCurrentOutputPort(cloneDag);
         System.out.println(cloneDag.lastOperatorName);
