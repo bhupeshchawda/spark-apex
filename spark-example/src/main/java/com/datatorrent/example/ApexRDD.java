@@ -217,6 +217,42 @@ public class ApexRDD<T> extends RDD<T> {
         return count;
     }
 
+    public ApexRDD<T>[] randomSplit(double[] doubles) {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
+        DefaultOutputPortSerializable currentSplitOutputPort = getCurrentOutputPort(cloneDag);
+        System.out.println(cloneDag.lastOperatorName);
+        controlOutput= getControlOutput(cloneDag);
+        RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
+        cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort, randomSplitOperator.input);
+        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, randomSplitOperator.controlDone);
+
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/outputDataSplit");
+//
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream_Split", randomSplitOperator.output, writer.input);
+
+        cloneDag.validate();
+        log.info("DAG successfully validated");
+
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(10000);
+
+        ApexRDD<T>[] temp1 = new ApexRDD[2];
+
+        return temp1;
+    }
+
 
     public enum OperatorType {
         INPUT,
