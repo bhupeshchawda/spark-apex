@@ -24,10 +24,10 @@ public class TestNaiveBayes implements Serializable
     System.out.println("Count: " + inputData.count());
     ApexRDD<LabeledPoint>[] tmp = (ApexRDD<LabeledPoint>[]) inputData.randomSplit(new double[]{0.6, 0.4});
     System.out.println(tmp.length);
-    System.out.println(tmp[0].count());
+    System.out.println(tmp[0].hashCode());
     //ApexRDD<LabeledPoint> training = new ApexRDD<LabeledPoint>(tmp[0].rdd(), tag); // training set
 //    ApexRDD<LabeledPoint> getCurrentOutputPort = new ApexRDD<LabeledPoint>(tmp[1].rdd(), tag); // getCurrentOutputPort set
-    final NaiveBayesModel model = NaiveBayes.train(tmp[0], 1.0);
+    //final NaiveBayesModel model = NaiveBayes.train(tmp[0], 1.0);
 //    JavaPairRDD<Double, Double> predictionAndLabel =
 //        getCurrentOutputPort.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
 //          @Override

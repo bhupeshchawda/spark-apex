@@ -4,7 +4,6 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
-import com.datatorrent.lib.io.ConsoleOutputOperator;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -22,7 +21,6 @@ import scala.reflect.ClassTag;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class ApexRDD<T> extends RDD<T> {
@@ -219,7 +217,8 @@ public class ApexRDD<T> extends RDD<T> {
         randomSplitOperator.weights=weights;
         cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort, randomSplitOperator.input);
-
+        NaiveTrainOperator naiveTrainOperator = cloneDag.addOperator(System.currentTimeMillis()+" Map",NaiveTrainOperator.class);
+        cloneDag.addStream(System.currentTimeMillis()+" Split to NaiveTrain",randomSplitOperator.getOutputPort(),naiveTrainOperator.getInputPort());
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
         GenericApplication app = new GenericApplication();
@@ -240,7 +239,8 @@ public class ApexRDD<T> extends RDD<T> {
 
         cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
-
+        NaiveTrainOperator naiveTrainOperator2 = cloneDag2.addOperator(System.currentTimeMillis()+" NaiveTrain",NaiveTrainOperator.class);
+        cloneDag2.addStream(System.currentTimeMillis()+" Split to NaiveTrain",randomSplitOperator2.getOutputPort(),naiveTrainOperator2.getInputPort());
         LocalMode lma2 = LocalMode.newInstance();
         Configuration conf2 = new Configuration(false);
         GenericApplication app2 = new GenericApplication();

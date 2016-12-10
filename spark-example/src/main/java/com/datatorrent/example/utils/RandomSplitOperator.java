@@ -70,7 +70,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
     }
 
     public DefaultOutputPortSerializable getOutputPort() {
-        return null;
+        return output;
     }
 
     public DefaultInputPortSerializable getControlPort() {
