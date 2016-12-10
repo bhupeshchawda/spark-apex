@@ -1,6 +1,8 @@
 package com.datatorrent.example;
 
 
+import org.apache.spark.mllib.classification.NaiveBayes;
+import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.reflect.ClassTag;
@@ -16,14 +18,16 @@ public class TestNaiveBayes implements Serializable
   }
   public TestNaiveBayes(ApexContext sc)
   {
-    String path = "/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
+    String path = "/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData.count());
     ApexRDD<LabeledPoint>[] tmp = (ApexRDD<LabeledPoint>[]) inputData.randomSplit(new double[]{0.6, 0.4});
-//    ApexRDD<LabeledPoint> training = new ApexRDD<LabeledPoint>(tmp[0].rdd(), tag); // training set
+    System.out.println(tmp.length);
+    System.out.println(tmp[0].count());
+    //ApexRDD<LabeledPoint> training = new ApexRDD<LabeledPoint>(tmp[0].rdd(), tag); // training set
 //    ApexRDD<LabeledPoint> getCurrentOutputPort = new ApexRDD<LabeledPoint>(tmp[1].rdd(), tag); // getCurrentOutputPort set
-//    final NaiveBayesModel model = NaiveBayes.train(training.rdd(), 1.0);
+    final NaiveBayesModel model = NaiveBayes.train(tmp[0], 1.0);
 //    JavaPairRDD<Double, Double> predictionAndLabel =
 //        getCurrentOutputPort.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
 //          @Override

@@ -4,6 +4,7 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
+import com.datatorrent.lib.io.ConsoleOutputOperator;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -21,6 +22,7 @@ import scala.reflect.ClassTag;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class ApexRDD<T> extends RDD<T> {
@@ -35,7 +37,6 @@ public class ApexRDD<T> extends RDD<T> {
         super(rdd, classTag);
         this.dag=((ApexRDD<T>)rdd).dag;
     }
-
 
 
     public ApexRDD(ApexContext ac) {
@@ -136,7 +137,7 @@ public class ApexRDD<T> extends RDD<T> {
         return (T) reduce;
     }
 
-    public Integer fileReader(String path){
+    public static Integer fileReader(String path){
         BufferedReader br = null;
         FileReader fr = null;
         try{
@@ -185,16 +186,13 @@ public class ApexRDD<T> extends RDD<T> {
         cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Count Input Stream", currentCountOutputPort, countOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
-//
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputDataCount");
-//
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
+        cloneDag.validate();
 
-         cloneDag.validate();
         log.info("DAG successfully validated");
-
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
         GenericApplication app = new GenericApplication();
@@ -214,22 +212,13 @@ public class ApexRDD<T> extends RDD<T> {
     @Override
     public ApexRDD<T>[] randomSplit(double[] weights, long seed){
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
+        MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentSplitOutputPort = getCurrentOutputPort(cloneDag);
-        System.out.println(cloneDag.lastOperatorName);
-        controlOutput= getControlOutput(cloneDag);
+
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
+        randomSplitOperator.weights=weights;
         cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort, randomSplitOperator.input);
-        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, randomSplitOperator.controlDone);
-
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputDataSplit");
-//
-        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream_Split", randomSplitOperator.output, writer.input);
-
-        cloneDag.validate();
-        log.info("DAG successfully validated");
 
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
@@ -242,8 +231,36 @@ public class ApexRDD<T> extends RDD<T> {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(10000);
+        log.info("DAG @2 is Starting");
+        DefaultOutputPortSerializable currentSplitOutputPort2 = getCurrentOutputPort(cloneDag2);
+
+        RandomSplitOperator randomSplitOperator2 = cloneDag2.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
+        randomSplitOperator2.weights=weights;
+        randomSplitOperator2.flag=true;
+
+        cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
+
+        LocalMode lma2 = LocalMode.newInstance();
+        Configuration conf2 = new Configuration(false);
+        GenericApplication app2 = new GenericApplication();
+        app2.setDag(cloneDag2);
+        try {
+            lma2.prepareDAG(app2, conf2);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc2 = lma2.getController();
+        lc2.run(10000);
 
         ApexRDD<T>[] temp1 = new ApexRDD[2];
+        ApexRDD temp = this;
+
+        temp.dag=cloneDag;
+        temp1[0]= temp;
+
+        this.dag=cloneDag2;
+        temp1[1]=this;
 
         return temp1;
     }
