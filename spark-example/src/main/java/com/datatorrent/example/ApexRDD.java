@@ -211,47 +211,18 @@ public class ApexRDD<T> extends RDD<T> {
     public ApexRDD<T>[] randomSplit(double[] weights, long seed){
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
-        DefaultOutputPortSerializable currentSplitOutputPort = getCurrentOutputPort(cloneDag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
 
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
         randomSplitOperator.weights=weights;
         cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort, randomSplitOperator.input);
-        NaiveTrainOperator naiveTrainOperator = cloneDag.addOperator(System.currentTimeMillis()+" Map",NaiveTrainOperator.class);
-        cloneDag.addStream(System.currentTimeMillis()+" Split to NaiveTrain",randomSplitOperator.getOutputPort(),naiveTrainOperator.getInputPort());
-        LocalMode lma = LocalMode.newInstance();
-        Configuration conf = new Configuration(false);
-        GenericApplication app = new GenericApplication();
-        app.setDag(cloneDag);
-        try {
-            lma.prepareDAG(app, conf);
-        } catch (Exception e) {
-            throw new RuntimeException("Exception in prepareDAG", e);
-        }
-        LocalMode.Controller lc = lma.getController();
-        lc.run(10000);
-        log.info("DAG @2 is Starting");
+        cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentOutputPort, randomSplitOperator.input);
         DefaultOutputPortSerializable currentSplitOutputPort2 = getCurrentOutputPort(cloneDag2);
-
         RandomSplitOperator randomSplitOperator2 = cloneDag2.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
         randomSplitOperator2.weights=weights;
         randomSplitOperator2.flag=true;
-
         cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
-        NaiveTrainOperator naiveTrainOperator2 = cloneDag2.addOperator(System.currentTimeMillis()+" NaiveTrain",NaiveTrainOperator.class);
-        cloneDag2.addStream(System.currentTimeMillis()+" Split to NaiveTrain",randomSplitOperator2.getOutputPort(),naiveTrainOperator2.getInputPort());
-        LocalMode lma2 = LocalMode.newInstance();
-        Configuration conf2 = new Configuration(false);
-        GenericApplication app2 = new GenericApplication();
-        app2.setDag(cloneDag2);
-        try {
-            lma2.prepareDAG(app2, conf2);
-        } catch (Exception e) {
-            throw new RuntimeException("Exception in prepareDAG", e);
-        }
-        LocalMode.Controller lc2 = lma2.getController();
-        lc2.run(10000);
 
         ApexRDD<T>[] temp1 = new ApexRDD[2];
         ApexRDD temp = this;

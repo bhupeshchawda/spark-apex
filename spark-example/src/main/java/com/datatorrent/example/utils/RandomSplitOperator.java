@@ -6,6 +6,7 @@ import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
@@ -36,7 +37,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
 
     public boolean done= false;
     private int index=0;
-    Logger log = org.slf4j.LoggerFactory.getLogger(RandomSplitOperator.class);
+    Logger log = LoggerFactory.getLogger(RandomSplitOperator.class);
 
     public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
         @Override
