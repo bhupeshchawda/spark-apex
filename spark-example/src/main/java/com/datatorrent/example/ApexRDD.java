@@ -223,19 +223,39 @@ public class ApexRDD<T> extends RDD<T> {
         randomSplitOperator2.flag=true;
         cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
-
-        ApexRDD<T>[] temp1 = new ApexRDD[2];
-        ApexRDD temp = this;
-
-        temp.dag=cloneDag;
-        temp1[0]= temp;
-
-        this.dag=cloneDag2;
-        temp1[1]=this;
-
-        return temp1;
+        ApexRDD temp1 =this;
+        temp1.dag=cloneDag;
+        ApexRDD temp2=this;
+        temp2.dag=cloneDag2;
+        ApexRDD[] temp=new ApexRDD[]{temp1, temp2};
+        return temp;
     }
 
+    @Override
+    public T[] collect() {
+        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        CollectOperator collectOperator =cloneDag.addOperator(System.currentTimeMillis()+" Collect Operator",CollectOperator.class);
+        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
+        cloneDag.validate();
+
+        log.info("DAG successfully validated");
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(10000);
+        T[] array= (T[]) CollectOperator.t.toArray();
+
+        return array;
+    }
 
     public enum OperatorType {
         INPUT,

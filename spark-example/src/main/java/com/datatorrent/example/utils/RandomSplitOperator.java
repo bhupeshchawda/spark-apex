@@ -18,7 +18,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
 
     public double[] weights;
 
-    public static boolean flag=false;
+    public  boolean flag=false;
 
     public int limit;
     public int a,b;
@@ -45,10 +45,8 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
             index++;
             if(index%a==0 && !flag){
                 output.emit(tuple);
-                log.info("CloneDag 1 tuples"+ tuple);
             }
             else if(index%a!=0 && flag){
-                log.info("CloneDag 2 tuples"+ tuple);
                 output.emit(tuple); // these output ports works correctly when I connect it to console operator,
                 // but we don't want that, So where it should be connected so that it can return
                 // updated ApexRDD.
