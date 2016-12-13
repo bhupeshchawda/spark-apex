@@ -12,8 +12,6 @@ public class ApexContext extends SparkContext
     super(new ApexConf());
   }
 
-
-
   public ApexContext(ApexConf config)
   {
     super(config);

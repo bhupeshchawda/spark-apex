@@ -60,8 +60,8 @@ public class PartitionwiseSampledApexRDD<T ,U> extends ApexRDD<T> {
         ApexRDD<T> apexRDD= (ApexRDD<T>) firstParent(classTag);
         Collection<Partition> partition = Arrays.asList(apexRDD.partitions());
         Random r = new Random(seed);
-        Partition[] p = (Partition[]) partition.stream().map(e -> new PartitionwiseSampledApexRDDPartition(e, r.nextLong())).toArray();
-        return p;
+       // Partition[] p = (Partition[]) partition.stream().map(e -> new PartitionwiseSampledApexRDDPartition(e, r.nextLong())).toArray();
+        return null;
     }
 
     @Override
