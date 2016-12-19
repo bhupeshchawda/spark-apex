@@ -11,6 +11,8 @@ import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.regression.LabeledPoint$;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.storage.StorageLevel;
@@ -43,7 +45,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
 
     public ApexRDD(ApexContext ac) {
         super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
-        this.context=ac;
+        context= ac;
         dag = new MyDAG();
 
     }
@@ -117,12 +119,8 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        if(m1.getID()==4)
-        {
-            parserdag = (MyDAG) SerializationUtils.clone(cloneDag);
-        }
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag =  cloneDag;
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;
     }
     public <U> RDD<U> map(Function<T, T> f) {
@@ -145,7 +143,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
         ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
-        temp.dag =  cloneDag;
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;
     }
 
@@ -220,7 +218,31 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         }
         return null;
     }
-
+    public static String SfileReader(String path){
+        BufferedReader br = null;
+        FileReader fr = null;
+        try{
+            fr = new FileReader(path);
+            br = new BufferedReader(fr);
+            String line;
+            br = new BufferedReader(new FileReader(path));
+            while((line = br.readLine())!=null){
+                return line;
+            }
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }finally {
+            try{
+                if(br!=null)
+                    br.close();
+                if(fr!=null)
+                    fr.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
 
 
     @Override
@@ -292,8 +314,9 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(10000);
-
-        return (T) firstOpertaor.a;
+        String first = SfileReader("/tmp/outputDataFirst");
+        T a= (T) LabeledPoint$.MODULE$.parse(first);
+        return a;
     }
 
     @Override

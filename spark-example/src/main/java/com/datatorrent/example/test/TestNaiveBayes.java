@@ -6,8 +6,11 @@ import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.mllib.classification.NaiveBayes;
+import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
+import org.junit.Assert;
 import scala.reflect.ClassTag;
 
 import java.io.Serializable;
@@ -27,11 +30,11 @@ public class TestNaiveBayes implements Serializable
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData.count());
-    /*ApexRDD<LabeledPoint>[] tmp = (ApexRDD<LabeledPoint>[]) inputData.randomSplit(new double[]{0.6, 0.4});
+    ApexRDD<LabeledPoint>[] tmp = (ApexRDD<LabeledPoint>[]) inputData.randomSplit(new double[]{0.6, 0.4});
     ApexRDD<LabeledPoint> training = tmp[0]; // training set
       Assert.assertTrue(training!=null);
     //ApexRDD<LabeledPoint> test = tmp[1];
-    final NaiveBayesModel model = NaiveBayes.train(training, 1.0);*/
+    final NaiveBayesModel model = NaiveBayes.train(training, 1.0);
 //    JavaPairRDD<Double, Double> predictionAndLabel =
 //        getCurrentOutputPort.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
 //          @Override

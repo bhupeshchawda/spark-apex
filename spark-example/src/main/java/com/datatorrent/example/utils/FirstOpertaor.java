@@ -2,6 +2,10 @@ package com.datatorrent.example.utils;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.Tuple3;
 
 import java.io.Serializable;
 
@@ -9,16 +13,18 @@ import java.io.Serializable;
  * Created by harsh on 17/12/16.
  */
 @DefaultSerializer(JavaSerializer.class)
-public class FirstOpertaor<T> extends MyBaseOperator implements Serializable {
+public class FirstOpertaor<U> extends MyBaseOperator implements Serializable {
     private boolean flag =true;
-    public  T a ;
-    public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
+    public LabeledPoint a;
+    Logger log = LoggerFactory.getLogger(FirstOpertaor.class);
+    public DefaultInputPortSerializable<U> input = new DefaultInputPortSerializable<U>() {
 
         @Override
-        public void process(Object tuple) {
+        public void process(U tuple) {
             if(flag) {
-                output.emit((T)tuple);
-                a= (T)tuple;
+                output.emit((U)tuple);
+                a= (LabeledPoint) tuple;
+                log.info("First tuple {}", tuple);
                 flag=false;
             }
         }
@@ -26,7 +32,7 @@ public class FirstOpertaor<T> extends MyBaseOperator implements Serializable {
     public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
 
     @Override
-    public DefaultInputPortSerializable<Object> getInputPort() {
+    public DefaultInputPortSerializable getInputPort() {
         return input;
     }
 
