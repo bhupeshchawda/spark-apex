@@ -19,6 +19,11 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
         ID=context.getId();
 
     }
+
+    public int getID() {
+        return ID;
+    }
+
     Logger log = LoggerFactory.getLogger(MapOperator.class);
     public Function1 f;
     public Function ff;
@@ -29,10 +34,10 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
         public void process(T tuple) {
                 try {
                     output.emit((U) f.apply(tuple));
-                    log.info("Function will be applied on tuple {} of OperatorID {} in Map",tuple,ID);
+                    log.info("Function will be applied on tuple {} {} of OperatorID {} in Map",tuple,tuple.getClass(),ID);
                 }
                 catch (Exception e){
-                    log.info("Exception Occured Due to {} of OperatorID {} in Map",tuple,ID);
+                    log.info("Exception Occured Due to {}  {} of OperatorID {} in Map",tuple,tuple.getClass(),ID);
                     output.emit((U)tuple);
                     e.printStackTrace();
                 }

@@ -1,7 +1,10 @@
 package com.datatorrent.example.utils;
 
+import com.datatorrent.api.Context;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Function2;
 
 import java.io.Serializable;
@@ -12,7 +15,7 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
   public Object previousValue = null;
   public Object finalValue = null;
   private boolean done = false;
-
+  public int ID;
   public ReduceOperator() {}
 
     public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
@@ -26,6 +29,12 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
       output.emit(finalValue);
     }
   }
+  Logger log = LoggerFactory.getLogger(MapOperator.class);
+  @Override
+  public void setup(Context.OperatorContext context) {
+    super.setup(context);
+    ID=context.getId();
+  }
 
   public final  DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
     @Override
@@ -38,6 +47,8 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
           previousValue = tuple;
           finalValue = f.apply(finalValue, previousValue);
       }
+      log.info("ReduceOperator operator ID {}",ID);
+
 
     }
   };

@@ -36,7 +36,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
     public OperatorType currentOperatorType;
     public DefaultOutputPortSerializable currentOutputPort;
     public DefaultOutputPortSerializable<Boolean> controlOutput;
-    public  MyDAG dag;
+    public  MyDAG dag,parserdag;
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     protected Option partitioner = new ApexRDDOptionPartitioner();
     public static ApexContext context;
@@ -108,7 +108,6 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         return currentOperator.getControlOut();
     }
 
-
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
@@ -118,8 +117,13 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        this.dag =  cloneDag;
-        return (ApexRDD<U>) this;
+        if(m1.getID()==4)
+        {
+            parserdag = (MyDAG) SerializationUtils.clone(cloneDag);
+        }
+        ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
+        temp.dag =  cloneDag;
+        return temp;
     }
     public <U> RDD<U> map(Function<T, T> f) {
 
@@ -140,9 +144,9 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
-        this.dag = cloneDag;
-
-        return this;
+        ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
+        temp.dag =  cloneDag;
+        return temp;
     }
 
     @Override
