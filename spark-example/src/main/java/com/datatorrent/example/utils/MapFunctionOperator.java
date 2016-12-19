@@ -1,6 +1,7 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
+import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
@@ -10,13 +11,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
+/**
+ * Created by krushika on 19/12/16.
+ */
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperatorFunction<T> extends MyBaseOperator implements Serializable {
-    int id=0;
+public class MapFunctionOperator<T> extends MyBaseOperator implements Serializable {
+
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
-        id=context.getId();
 
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
@@ -30,7 +33,6 @@ public class MapOperatorFunction<T> extends MyBaseOperator implements Serializab
                 output.emit((T) f.call(tuple));
             }
             catch (Exception e){
-                log.info("Exception Occured Due to {} ",tuple);
                 output.emit(tuple);
             }
 
@@ -38,22 +40,21 @@ public class MapOperatorFunction<T> extends MyBaseOperator implements Serializab
     };
 
 
-    public DefaultOutputPortSerializable<T> getOutputPort() {
-        return this.output;
+    @Override
+    public DefaultInputPortSerializable<Object> getInputPort() {
+        return null;
     }
 
+    @Override
+    public DefaultOutputPortSerializable<T> getOutputPort() {return this.output;}
+
+    @Override
     public DefaultInputPortSerializable getControlPort() {
         return null;
     }
 
+    @Override
     public DefaultOutputPortSerializable<Boolean> getControlOut() {
         return null;
     }
-
-    public DefaultInputPortSerializable<Object> getInputPort() {
-        return (DefaultInputPortSerializable<Object>) this.input;
-    }
-
-    public boolean isInputPortOpen = true;
-    public boolean isOutputPortOpen = true;
 }

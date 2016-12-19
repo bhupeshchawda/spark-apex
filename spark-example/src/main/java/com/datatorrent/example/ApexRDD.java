@@ -94,7 +94,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        MapOperatorFunction m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperatorFunction());
+        MapFunctionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapFunctionOperator());
         m1.f=f;
 
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
