@@ -1,7 +1,6 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
-import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.slf4j.Logger;

@@ -1,6 +1,5 @@
 package com.datatorrent.example.utils;
 
-import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 

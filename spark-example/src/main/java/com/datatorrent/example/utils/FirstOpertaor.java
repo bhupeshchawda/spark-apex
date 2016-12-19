@@ -1,12 +1,9 @@
 package com.datatorrent.example.utils;
 
-import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import org.apache.spark.mllib.regression.LabeledPoint;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 /**
  * Created by harsh on 17/12/16.

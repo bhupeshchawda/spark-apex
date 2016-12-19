@@ -1,4 +1,4 @@
-package com.datatorrent.example;
+package com.datatorrent.example.utils;
 
 import com.datatorrent.common.util.BaseOperator;
 import com.datatorrent.example.utils.DefaultInputPortSerializable;

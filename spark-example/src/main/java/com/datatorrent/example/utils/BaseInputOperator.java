@@ -2,7 +2,6 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
-import com.datatorrent.example.MyBaseOperator;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
