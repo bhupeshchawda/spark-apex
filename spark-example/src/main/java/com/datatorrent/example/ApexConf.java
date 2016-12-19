@@ -1,12 +1,10 @@
 package com.datatorrent.example;
-
 import org.apache.spark.SparkConf;
 
-public class ApexConf extends SparkConf
+import java.io.Serializable;
+
+public class ApexConf extends SparkConf implements Serializable
 {
-  public ApexConf()
-  {
-  }
 
   @Override
   public ApexConf setMaster(String master)

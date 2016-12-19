@@ -4,14 +4,14 @@ import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.api.java.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Function1;
 
 import java.io.Serializable;
 
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator<T> extends MyBaseOperator implements Serializable {
+public class MapOperatorFunction<T> extends MyBaseOperator implements Serializable {
     int id=0;
     @Override
     public void setup(Context.OperatorContext context) {
@@ -20,19 +20,19 @@ public class MapOperator<T> extends MyBaseOperator implements Serializable {
 
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
-    public Function1 f;
+    public Function f;
     public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-                try {
+            try {
 
-                    output.emit((T) f.apply(tuple));
-                }
-                catch (Exception e){
-                    log.info("Exception Occured Due to {} ",tuple);
-                    output.emit(tuple);
-                }
+                output.emit((T) f.call(tuple));
+            }
+            catch (Exception e){
+                log.info("Exception Occured Due to {} ",tuple);
+                output.emit(tuple);
+            }
 
         }
     };

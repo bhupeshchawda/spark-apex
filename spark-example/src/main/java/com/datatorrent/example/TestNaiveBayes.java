@@ -3,7 +3,6 @@ package com.datatorrent.example;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import junit.framework.Assert;
 import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -23,7 +22,7 @@ public class TestNaiveBayes implements Serializable
   public TestNaiveBayes(ApexContext sc)
   {
 
-    String path = "/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
+    String path = "/home/anurag/dev/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
     ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
     ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
     System.out.println("Count: " + inputData.count());
@@ -31,9 +30,9 @@ public class TestNaiveBayes implements Serializable
 //    System.out.println(Arrays.toString(tmp[0].collect()));
 //    System.out.println(tmp[1].count());
     ApexRDD<LabeledPoint> training =tmp[0]; // training set
-      Assert.assertTrue(training!=null);
-    ApexRDD<LabeledPoint> test = new ApexRDD<>(tmp[1], tag); // getCurrentOutputPort set
-    final NaiveBayesModel model = NaiveBayes.train(training.toJavaRDD().rdd(), 1.0);
+//      Assert.assertTrue(training!=null);
+//    ApexRDD<LabeledPoint> test = tmp[1]; // getCurrentOutputPort set
+    final NaiveBayesModel model = NaiveBayes.train(training, 1.0);
 //    JavaPairRDD<Double, Double> predictionAndLabel =
 //        getCurrentOutputPort.mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
 //          @Override
@@ -57,7 +56,7 @@ public class TestNaiveBayes implements Serializable
   public static void main(String[] args)
   {
 //    JavaSparkContext sc  = new JavaSparkContext(new SparkConf().setMaster("local[2]").setAppName("TestNaiveBayes"));
-    ApexContext sc  = new ApexContext(new ApexConf().setMaster("local").setAppName("ApexApp"));
+    ApexContext sc  = new ApexContext(new ApexConf().setMaster("local[2]").setAppName("ApexApp"));
     TestNaiveBayes t = new TestNaiveBayes(sc);
   }
 }

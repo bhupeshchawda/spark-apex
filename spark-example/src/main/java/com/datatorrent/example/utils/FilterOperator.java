@@ -1,15 +1,25 @@
 package com.datatorrent.example.utils;
 
+import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Function1;
 
 import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
 public class FilterOperator extends MyBaseOperator implements Serializable
 {
-  public Function1 f;
+    int id=0;
+    @Override
+    public void setup(Context.OperatorContext context) {
+        super.setup(context);
+        id=context.getId();
+    }
+    Logger log = LoggerFactory.getLogger(FilterOperator.class);
+    public Function1 f;
   public final  DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
     @Override
     public void process(Object tuple)

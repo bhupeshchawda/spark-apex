@@ -1,11 +1,13 @@
 package com.datatorrent.example;
 
 import com.datatorrent.example.utils.BaseInputOperator;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.storage.StorageLevel;
-
-public class ApexContext extends SparkContext
+import scala.Serializable;
+@DefaultSerializer(JavaSerializer.class)
+public class ApexContext extends SparkContext implements Serializable
 {
   public ApexContext()
   {
@@ -20,7 +22,7 @@ public class ApexContext extends SparkContext
   @Override
   public RDD<String> textFile(String path, int minPartitions)
   {
-    ApexRDD rdd = new ApexRDD<String>(this);
+    ApexRDD rdd = new ApexRDD<>(this);
     BaseInputOperator fileInput = rdd.getDag().addOperator(System.currentTimeMillis()+ " Input ", BaseInputOperator.class);
     rdd.currentOperator =  fileInput;
     rdd.currentOperatorType = ApexRDD.OperatorType.INPUT;
