@@ -4,6 +4,8 @@ import com.datatorrent.example.utils.BaseInputOperator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
+import scala.collection.Seq;
+import scala.reflect.ClassTag;
 
 public class ApexContext extends SparkContext
 {
@@ -30,4 +32,10 @@ public class ApexContext extends SparkContext
 
     return rdd;
   }
+
+  @Override
+  public <T> RDD<T> parallelize(Seq<T> seq, int numSlices, ClassTag<T> evidence$1) {
+    return super.parallelize(seq, numSlices, evidence$1);
+  }
+
 }

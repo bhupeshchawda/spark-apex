@@ -15,9 +15,6 @@ import java.util.ArrayList;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class CollectOperator<T> extends BaseOperator implements Serializable {
-    FileWriter  fw;
-    BufferedWriter bw;
-    PrintWriter out;
     Logger log = LoggerFactory.getLogger(CollectOperator.class);
     public CollectOperator(){}
     public static ArrayList<Object> t;
@@ -32,14 +29,7 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
     int count=0;
     @Override
     public void setup(Context.OperatorContext context) {
-        try {
-            t=new ArrayList<>();
-            fw= new FileWriter("/tmp/collectedData",true);
-            bw= new BufferedWriter(fw);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        t=new ArrayList<>();
     }
 
 }

@@ -13,18 +13,21 @@ import scala.reflect.ClassTag;
 /**
  * Created by anurag on 12/12/16.
  */
-public class PairApexRDDFunctions<K,V> extends PairRDDFunctions<K,V> {
-    public PairApexRDDFunctions(RDD<Tuple2<K, V>> self, ClassTag<K> kt, ClassTag<V> vt, Ordering<K> ord) {
-        super(self, kt, vt, ord);
+public class PairApexRDDFunctions<K,V> {//extends PairRDDFunctions<K,V> {
+
+    public PairApexRDDFunctions() {
+//        super();
     }
 
-    @Override
+//    @Override
     public <C> RDD<Tuple2<K, C>> combineByKey(Function1<V, C> createCombiner, Function2<C, V, C> mergeValue, Function2<C, C, C> mergeCombiners, Partitioner partitioner, boolean mapSideCombine, Serializer serializer) {
-        return super.combineByKey(createCombiner, mergeValue, mergeCombiners, partitioner, mapSideCombine, serializer);
+//        return super.combineByKey(createCombiner, mergeValue, mergeCombiners, partitioner, mapSideCombine, serializer);
+        return null;
     }
 
-    @Override
+//    @Override
     public <C> RDD<Tuple2<K, C>> combineByKey(Function1<V, C> createCombiner, Function2<C, V, C> mergeValue, Function2<C, C, C> mergeCombiners, int numPartitions) {
-        return super.combineByKey(createCombiner, mergeValue, mergeCombiners, numPartitions);
+//        return super.combineByKey(createCombiner, mergeValue, mergeCombiners, numPartitions);
+        return null;
     }
 }

@@ -20,7 +20,7 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public BaseInputOperator(){
 
     }
-    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
+    public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
     public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
     public DefaultInputPortSerializable<Object> getInputPort() {
@@ -42,9 +42,9 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public void emitTuples() {
         try {
             String line = br.readLine();
-            if (line != null) {
-                output.emit(line);
 
+            if (line != null) {
+                    output.emit(line);
             }
             else {
                 sent=true;

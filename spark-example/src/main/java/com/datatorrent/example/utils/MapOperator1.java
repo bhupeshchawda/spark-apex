@@ -10,40 +10,36 @@ import scala.Function1;
 
 import java.io.Serializable;
 import org.apache.spark.api.java.function.*;
-import scala.Tuple3;
-
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
-    public int ID;
+public class MapOperator1<T> extends MyBaseOperator implements Serializable {
+
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
-        ID=context.getId();
 
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
     public Function1 f;
     public Function ff;
-
-    public DefaultOutputPortSerializable<U> output = new DefaultOutputPortSerializable<U>();
+    public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-                try {
-                    output.emit((U) f.apply(tuple));
-                    log.info("Function applied on tuple {} of OperatorID {} at Map",tuple,ID);
-                }
-                catch (Exception e){
-                    log.info("Exception Occured Due to {} of OperatorID {} at Map",tuple,ID);
-                    output.emit((U)tuple);
-                    e.printStackTrace();
-                }
+            try {
+
+                output.emit((T) ff.call(tuple));
+            }
+            catch (Exception e){
+                log.info("Exception Occured Due to {} ",tuple);
+                output.emit(tuple);
+              //  e.printStackTrace();
+            }
 
         }
     };
 
 
-    public DefaultOutputPortSerializable<U> getOutputPort() {
+    public DefaultOutputPortSerializable<T> getOutputPort() {
         return this.output;
     }
 
