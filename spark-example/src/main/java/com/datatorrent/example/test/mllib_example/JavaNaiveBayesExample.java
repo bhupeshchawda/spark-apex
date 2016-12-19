@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.datatorrent.example.Test.mllib_example;
+package com.datatorrent.example.test.mllib_example;
 
 // $example on$
 import scala.Tuple2;

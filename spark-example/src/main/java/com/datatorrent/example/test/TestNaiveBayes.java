@@ -1,4 +1,4 @@
-package com.datatorrent.example.Test;
+package com.datatorrent.example.test;
 
 
 import com.datatorrent.example.ApexConf;
@@ -6,9 +6,6 @@ import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import junit.framework.Assert;
-import org.apache.spark.mllib.classification.NaiveBayes;
-import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.reflect.ClassTag;

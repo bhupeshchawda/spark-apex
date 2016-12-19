@@ -1,14 +1,9 @@
-package com.datatorrent.example.Test;
+package com.datatorrent.example.test;
 
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
-import com.datatorrent.example.ApexRDD;
-import org.apache.spark.api.java.JavaDoubleRDD;
-import scala.collection.Seq;
-import scala.collection.immutable.List;
-import scala.collection.convert.Decorators.AsScala;
+
 import java.io.Serializable;
-import java.util.Arrays;
 
 /**
  * Created by harsh on 17/12/16.

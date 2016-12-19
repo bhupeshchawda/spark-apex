@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.datatorrent.example.Test.mllib_example;
+package com.datatorrent.example.test.mllib_example;
 
 
 import org.apache.spark.api.java.function.VoidFunction;

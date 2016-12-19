@@ -1,22 +1,18 @@
-package com.datatorrent.example.Test;
+package com.datatorrent.example.test;
 
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.feature.ChiSqSelector;
 import org.apache.spark.mllib.feature.ChiSqSelectorModel;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
-import org.apache.spark.rdd.RDD;
-import org.junit.Assert;
 import scala.Function1;
 import scala.reflect.ClassTag;
-import scala.reflect.ClassTag$;
 
 import java.io.Serializable;
 
