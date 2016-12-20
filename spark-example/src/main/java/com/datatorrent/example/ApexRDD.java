@@ -2,6 +2,7 @@ package com.datatorrent.example;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
+import com.datatorrent.example.scala.ApexPartition;
 import com.datatorrent.example.scala.ApexRDDs;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
@@ -11,24 +12,28 @@ import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.regression.LabeledPoint$;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.rdd.RDDOperationScope$;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Function1;
+import scala.*;
+import scala.Function0;
 import scala.Function2;
-import scala.Option;
-import scala.Tuple2;
 import scala.collection.Iterator;
+import scala.collection.Map;
+import scala.math.Ordering;
 import scala.reflect.ClassTag;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.Boolean;
 import java.util.Random;
 import org.apache.spark.api.java.function.*;
 public class ApexRDD<T> extends ApexRDDs<T> {
@@ -42,6 +47,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     protected Option partitioner = new ApexRDDOptionPartitioner();
     public static ApexContext context;
+
 
     public ApexRDD(ApexContext ac) {
         super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
@@ -58,6 +64,10 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         return context;
     }
 
+    @Override
+    public SparkContext sparkContext() {
+        return context;
+    }
 
     public RDD<Tuple2> combineByKey(Function1 createCombiner, Function2 mergeValue, Function2 mergeCombiners) {
         return combineByKey(createCombiner, mergeValue, mergeCombiners);
@@ -123,6 +133,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;
     }
+
     public <U> RDD<U> map(Function<T, T> f) {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
@@ -131,8 +142,9 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         m1.ff=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream1 ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        this.dag =  cloneDag;
-        return (ApexRDD<U>) this;
+        ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        return temp;
     }
 
     @Override
@@ -254,7 +266,9 @@ public class ApexRDD<T> extends ApexRDDs<T> {
     @Override
     public Partition[] getPartitions() {
         // TODO Auto-generated method stub
+        ApexPartition apexPartition = new ApexPartition();
         Partition[] partitions = new Partition[apexRDDPartitioner.numPartitions()];
+        partitions[0]=apexPartition;
         return partitions;
     }
     @Override
@@ -324,7 +338,6 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
         randomSplitOperator.weights=weights;
         cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
@@ -335,12 +348,36 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         randomSplitOperator2.flag=true;
         cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
-        ApexRDD temp1 =this;
+        ApexRDD temp1 = (ApexRDD) SerializationUtils.clone(this);
         temp1.dag=cloneDag;
-        ApexRDD temp2=this;
+        ApexRDD temp2=(ApexRDD) SerializationUtils.clone(this);
         temp2.dag=cloneDag2;
         ApexRDD[] temp=new ApexRDD[]{temp1, temp2};
         return temp;
+    }
+
+    @Override
+    public <U> RDD<U> mapPartitions(Function1<Iterator<T>, Iterator<U>> f, boolean preservesPartitioning, ClassTag<U> evidence$6) {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
+        m1.f=f;
+        cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
+        temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
+        return temp;
+    }
+
+    @Override
+    public <U> U withScope(Function0<U> body) {
+        return RDDOperationScope$.MODULE$.withScope(context,false,body);
+    }
+
+    @Override
+    public Map<T, Object> countByValue(Ordering<T> ord) {
+
+        return super.countByValue(ord);
     }
 
     @Override

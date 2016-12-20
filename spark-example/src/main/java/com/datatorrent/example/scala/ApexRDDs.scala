@@ -7,12 +7,21 @@ import org.apache.spark.rdd.{RDD, _}
 import scala.math.Ordering
 import scala.reflect.ClassTag
 
-abstract class ApexRDDs[T: ClassTag](prev: RDD[T]) extends RDD[T](prev) {
+//abstract class ApexRDDs[T: ClassTag](prev: RDD[T]) extends RDD[T](prev) {
+abstract class ApexRDDs[T: ClassTag](
+                                     @transient private var sc: SparkContext,
+                                     @transient private var deps: Seq[Dependency[_]]
+                                   ) extends RDD[T](sc,Nil){
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = ???
 
   override protected def getPartitions: Array[Partition] = ???
+
+  def this(@transient oneParent: RDD[_]) =
+    this(oneParent.context, List(new OneToOneDependency(oneParent)))
+
+  override def sparkContext: SparkContext = sc
 
   def scalaInt(integer: java.lang.Integer): Int={
     try{
@@ -25,8 +34,7 @@ abstract class ApexRDDs[T: ClassTag](prev: RDD[T]) extends RDD[T](prev) {
 
 }
 
-object ApexRDDs
-{
+object ApexRDDs {
   implicit class ApexRDDs[T: ClassTag](rdd: RDD[T])
   {
     implicit def rddToPairRDDFunctions[K, V](rdd: RDD[(K, V)])
@@ -41,4 +49,5 @@ object ApexRDDs
   }
 
 }
+
 
