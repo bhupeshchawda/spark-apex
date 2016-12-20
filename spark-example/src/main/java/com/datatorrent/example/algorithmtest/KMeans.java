@@ -14,21 +14,21 @@ import org.apache.spark.mllib.linalg.Vectors;
 public class KMeans {
     public static void main(String args[]){
         ApexContext jsc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Kmeans"));
-        String path = "/home/anurag/spark-master/data/mllib/kmeans_data.txt";
+        String path = "/home/krushika/spark-apex/spark-example/src/main/resources/data/kmeans_data.txt";
         ApexRDD<String> data = (ApexRDD<String>) jsc.textFile(path,0);
         ApexRDD<Vector> parsedData = (ApexRDD<Vector>) data.map(
-                new Function<String, Vector>() {
-                    public Vector call(String s) {
-                        String[] sarray = s.split(" ");
-                        double[] values = new double[sarray.length];
-                        for (int i = 0; i < sarray.length; i++) {
-                            values[i] = Double.parseDouble(sarray[i]);
-                        }
-                        return Vectors.dense(values);
+                (Function<String, Vector>) s -> {
+                    String[] sarray = s.split(" ");
+                    double[] values = new double[sarray.length];
+                    for (int i = 0; i < sarray.length; i++) {
+                        values[i] = Double.parseDouble(sarray[i]);
                     }
+                    return Vectors.dense(values);
                 }
         );
         parsedData.cache();
+
+//        System.out.println("K Means Values :"+parsedData.toJavaRDD().collect());
 
 // Cluster the data into two classes using KMeans
         int numClusters = 2;
@@ -36,19 +36,19 @@ public class KMeans {
         KMeansModel clusters = org.apache.spark.mllib.clustering.KMeans.train(parsedData, numClusters, numIterations);
 
         System.out.println("Cluster centers:");
-        for (Vector center: clusters.clusterCenters()) {
-            System.out.println(" " + center);
-        }
-        double cost = clusters.computeCost(parsedData);
-        System.out.println("Cost: " + cost);
-
-// Evaluate clustering by computing Within Set Sum of Squared Errors
-        double WSSSE = clusters.computeCost(parsedData);
-        System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
-
-// Save and load model
-        clusters.save(jsc, "target/org/apache/spark/JavaKMeansExample/KMeansModel");
-        KMeansModel sameModel = KMeansModel.load(jsc,
-                "target/org/apache/spark/JavaKMeansExample/KMeansModel");
+//        for (Vector center: clusters.clusterCenters()) {
+//            System.out.println(" " + center);
+//        }
+//        double cost = clusters.computeCost(parsedData);
+//        System.out.println("Cost: " + cost);
+//
+//// Evaluate clustering by computing Within Set Sum of Squared Errors
+//        double WSSSE = clusters.computeCost(parsedData);
+//        System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
+//
+//// Save and load model
+//        clusters.save(jsc, "target/org/apache/spark/JavaKMeansExample/KMeansModel");
+//        KMeansModel sameModel = KMeansModel.load(jsc,
+//                "target/org/apache/spark/JavaKMeansExample/KMeansModel");
     }
 }

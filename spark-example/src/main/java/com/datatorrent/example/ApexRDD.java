@@ -16,15 +16,14 @@ import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.rdd.RDDOperationScope$;
+import org.apache.spark.rdd.ZippedPartitionsRDD2;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Function1;
-import scala.Function2;
-import scala.Option;
-import scala.Tuple2;
+import scala.*;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
@@ -32,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.Boolean;
 import java.util.Random;
 @DefaultSerializer(JavaSerializer.class)
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
@@ -69,6 +69,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         context=ac;
     }
 
+
     Logger log = LoggerFactory.getLogger(ApexRDD.class);
     public MyDAG getDag() {
         return this.dag;
@@ -104,6 +105,55 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         temp.dag=cloneDag;
         return temp;
     }
+
+    @Override
+    public <B, V> RDD<V> zipPartitions(RDD<B> rdd2, Function2<Iterator<T>, Iterator<B>,
+            Iterator<V>> f, ClassTag<B> evidence$12, ClassTag<V> evidence$13) {
+        Assert.assertTrue(false);
+        ApexRDD<V> temp = (ApexRDD<V>) super.zipPartitions(rdd2, f, evidence$12, evidence$13);
+        temp.dag= (MyDAG) SerializationUtils.clone(this.dag);
+
+        return temp;
+    }
+
+    @Override
+    public <B, V> RDD<V> zipPartitions(RDD<B> rdd2, boolean preservesPartitioning, Function2<Iterator<T>, Iterator<B>, Iterator<V>> f, ClassTag<B> evidence$10, ClassTag<V> evidence$11) {
+        ApexRDD<V> temp = (ApexRDD<V>) super.zipPartitions(rdd2, f, evidence$10, evidence$11);
+        temp.dag= (MyDAG) SerializationUtils.clone(this.dag);
+        return  temp;
+
+    }
+
+    @Override
+    public <B, C, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, boolean preservesPartitioning, Function3<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<V>> f, ClassTag<B> evidence$14, ClassTag<C> evidence$15, ClassTag<V> evidence$16) {
+        Assert.assertTrue("2",false);
+        return super.zipPartitions(rdd2, rdd3, preservesPartitioning, f, evidence$14, evidence$15, evidence$16);
+    }
+
+    @Override
+    public <B, C, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, Function3<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<V>> f, ClassTag<B> evidence$17, ClassTag<C> evidence$18, ClassTag<V> evidence$19) {
+        Assert.assertTrue("3",false);
+        return super.zipPartitions(rdd2, rdd3, f, evidence$17, evidence$18, evidence$19);
+    }
+
+    @Override
+    public <B, C, D, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, RDD<D> rdd4, boolean preservesPartitioning, Function4<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<D>, Iterator<V>> f, ClassTag<B> evidence$20, ClassTag<C> evidence$21, ClassTag<D> evidence$22, ClassTag<V> evidence$23) {
+        Assert.assertTrue("4",false);
+        return super.zipPartitions(rdd2, rdd3, rdd4, preservesPartitioning, f, evidence$20, evidence$21, evidence$22, evidence$23);
+    }
+
+    @Override
+    public <B, C, D, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, RDD<D> rdd4, Function4<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<D>, Iterator<V>> f, ClassTag<B> evidence$24, ClassTag<C> evidence$25, ClassTag<D> evidence$26, ClassTag<V> evidence$27) {
+        Assert.assertTrue("5",false);
+        return super.zipPartitions(rdd2, rdd3, rdd4, f, evidence$24, evidence$25, evidence$26, evidence$27);
+    }
+
+    @Override
+    public <U> U withScope(Function0<U> body) {
+        return RDDOperationScope$.MODULE$.withScope(context,false,body);
+    }
+
+
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
@@ -216,6 +266,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public Partition[] getPartitions() {
         // TODO Auto-generated method stub
         ApexPartition[] partitions = new ApexPartition[apexRDDPartitioner.numPartitions()];
+        ApexPartition apexPartition= new ApexPartition();
+        partitions[0]=apexPartition;
         return partitions;
 
 

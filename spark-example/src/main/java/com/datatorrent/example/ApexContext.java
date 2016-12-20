@@ -5,7 +5,10 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
+import scala.Function2;
 import scala.Serializable;
+import scala.collection.Iterator;
+
 @DefaultSerializer(JavaSerializer.class)
 public class ApexContext extends SparkContext implements Serializable
 {
@@ -32,4 +35,5 @@ public class ApexContext extends SparkContext implements Serializable
 
     return rdd;
   }
+
 }
