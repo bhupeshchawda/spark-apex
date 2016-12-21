@@ -42,7 +42,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public MyBaseOperator currentOperator;
     public OperatorType currentOperatorType;
     public DefaultOutputPortSerializable currentOutputPort;
-    public DefaultOutputPortSerializable<Boolean> controlOutput;
+    public DefaultOutputPortSerializable controlOutput;
     public  MyDAG dag;
     public static ApexContext _sc;
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
@@ -81,7 +81,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         try {
             log.info("Last operator in the Dag {}",dag.getLastOperatorName());
-           MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
+            MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
             return currentOperator.getOutputPort();
         } catch (Exception e) {
             System.out.println("Operator "+cloneDag.getLastOperatorName()+" Doesn't exist in the dag");
@@ -97,11 +97,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        MapOperatorFunction m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperatorFunction());
+        MapOperatorFunction m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapFunction " , new MapOperatorFunction());
         m1.f=f;
 
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
-        cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        cloneDag.addStream( System.currentTimeMillis()+ " MapStream Function", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
@@ -152,7 +152,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     @Override
     public <U> U withScope(Function0<U> body) {
-       return RDDOperationScope$.MODULE$.withScope(context,false,body);
+        return RDDOperationScope$.MODULE$.withScope(context,false,body);
 
     }
 
@@ -161,11 +161,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
+        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapOperator());
         m1.f=f;
 
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
-        cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
