@@ -1,7 +1,6 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
-import com.datatorrent.example.ApexRDD;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
@@ -22,7 +21,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
 
     public int limit;
     public int a,b;
-    Integer count= ApexRDD.fileReader("/tmp/outputDataCount");
+    public long count= 1;
 
 
     @Override
@@ -47,9 +46,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
                 output.emit(tuple);
             }
             else if(index%a!=0 && flag){
-                output.emit(tuple); // these output ports works correctly when I connect it to console operator,
-                // but we don't want that, So where it should be connected so that it can return
-                // updated ApexRDD.
+                output.emit(tuple);
             }
 
         }
