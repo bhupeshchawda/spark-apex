@@ -2,10 +2,11 @@ package com.datatorrent.example;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
-import com.datatorrent.example.scala.ApexPartition;
-import com.datatorrent.example.scala.ApexRDDs;
+import com.datatorrent.example.scala.*;
+import com.datatorrent.example.scala.MyFunction;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -13,8 +14,9 @@ import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.regression.LabeledPoint$;
+import org.apache.spark.rdd.PairRDDFunctions;
+import org.apache.spark.rdd.PairRDDFunctions$;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.rdd.RDDOperationScope$;
 import org.apache.spark.serializer.Serializer;
@@ -27,6 +29,7 @@ import scala.Function0;
 import scala.Function2;
 import scala.collection.Iterator;
 import scala.collection.Map;
+import scala.collection.Map$;
 import scala.math.Ordering;
 import scala.reflect.ClassTag;
 
@@ -35,7 +38,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.Boolean;
 import java.util.Random;
-import org.apache.spark.api.java.function.*;
+
 public class ApexRDD<T> extends ApexRDDs<T> {
     private static final long serialVersionUID = -3545979419189338756L;
 
@@ -376,8 +379,22 @@ public class ApexRDD<T> extends ApexRDDs<T> {
 
     @Override
     public Map<T, Object> countByValue(Ordering<T> ord) {
+        ApexRDD<T> apexRDD = (ApexRDD<T>) this.map(new MyFunction<T, T>(),elementClassTag());
+        ApexRDD<Tuple2<T, Object>> tuple2ApexRDD= apexRDD.mapValues(new MapValuesFunction<T, Object>());
+        Map<T, Object> mapObj= (Map<T, Object>) tuple2ApexRDD.reduceByKey((SecondSumFunc<Tuple2<T, Object>, Tuple2<T, Object>, Tuple2<T, Object>>) new SecondSumFunc<T,T,T>());
 
-        return super.countByValue(ord);
+        return Map$.MODULE$.empty();
+    }
+
+
+    //K,V
+    public <U> ApexRDD<Tuple2<T, U>> mapValues(Function1<T, U> f) {
+        ApexRDD<Tuple2<T,U>> apexRDD = (ApexRDD<Tuple2<T,U>>) this.map(f, (ClassTag<U>) elementClassTag());
+        return apexRDD;
+    }
+
+    public Map<T, Object> reduceByKey(SecondSumFunc<T, T, T> func) {
+        return null;
     }
 
     @Override

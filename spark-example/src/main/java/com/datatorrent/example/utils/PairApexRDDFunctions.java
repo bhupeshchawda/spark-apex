@@ -24,6 +24,16 @@ public class PairApexRDDFunctions<K,V> extends PairRDDFunctions<K,V>{
     }
 
     @Override
+    public RDD<Tuple2<K, V>> reduceByKey(Function2<V, V, V> func) {
+        return super.reduceByKey(func);
+    }
+
+    @Override
+    public <U> RDD<Tuple2<K, U>> mapValues(Function1<V, U> f) {
+        return super.mapValues(f);
+    }
+
+    @Override
     public Map<K, Object> countByKey() {
         return super.countByKey();
     }

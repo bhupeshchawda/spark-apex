@@ -9,6 +9,8 @@ import scala.Function1;
 
 import java.io.Serializable;
 import org.apache.spark.api.java.function.*;
+import scala.Tuple2;
+
 @DefaultSerializer(JavaSerializer.class)
 public class MapOperator1<T> extends MyBaseOperator implements Serializable {
 
@@ -27,6 +29,7 @@ public class MapOperator1<T> extends MyBaseOperator implements Serializable {
             try {
 
                 output.emit((T) ff.call(tuple));
+
             }
             catch (Exception e){
                 log.info("Exception Occured Due to {} ",tuple);
