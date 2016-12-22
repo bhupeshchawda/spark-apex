@@ -4,6 +4,9 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.{RDD, _}
 
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.math.Ordering
 import scala.reflect.ClassTag
 
@@ -29,7 +32,11 @@ abstract class ApexRDDs[T: ClassTag](
     }catch {
       case e: Exception => 0
     }
+  }
 
+  def scalaMap[K,V](map: java.util.HashMap[K,V]): mutable.Map[K, V]={
+    val scalamap = map.asScala;
+    return scalamap
   }
 
 }

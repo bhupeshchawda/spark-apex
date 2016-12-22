@@ -4,6 +4,7 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.scala.ApexPartition;
 import com.datatorrent.example.scala.ApexRDDs;
+import com.datatorrent.example.scala.MyFunction;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import org.apache.commons.lang.SerializationUtils;
@@ -357,11 +358,12 @@ public class ApexRDD<T> extends ApexRDDs<T> {
 
     @Override
     public <U> RDD<U> mapPartitions(Function1<Iterator<T>, Iterator<U>> f, boolean preservesPartitioning, ClassTag<U> evidence$6) {
+        MyFunction f1 = new MyFunction();
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
-        m1.f=f;
-        cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartitions " , new MapOperator());
+        m1.f=f1;
+        cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionsStream ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
