@@ -4,6 +4,7 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.scala.ApexPartition;
 import com.datatorrent.example.scala.ApexRDDs;
+import com.datatorrent.example.scala.ApexRDDs$;
 import com.datatorrent.example.scala.MyFunction;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
@@ -400,7 +401,8 @@ public class ApexRDD<T> extends ApexRDDs<T> {
 
         HashMap hashMap = countByVlaueOperator.hashMap;
         System.out.println(hashMap.size());
-        return (Map<T, Object>) hashMap;
+        Map<T, Object> map = this.scalaMap(hashMap);
+        return map;
     }
 
 
