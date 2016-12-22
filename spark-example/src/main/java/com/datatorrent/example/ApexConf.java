@@ -1,8 +1,12 @@
 package com.datatorrent.example;
+
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.SparkConf;
 
 import java.io.Serializable;
 
+@DefaultSerializer(JavaSerializer.class)
 public class ApexConf extends SparkConf implements Serializable
 {
 

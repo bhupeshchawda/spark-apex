@@ -15,7 +15,7 @@ import java.util.ArrayList;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class CollectOperator<T> extends BaseOperator implements Serializable {
-    FileWriter  fw;
+    FileWriter fw;
     BufferedWriter bw;
     PrintWriter out;
     Logger log = LoggerFactory.getLogger(CollectOperator.class);

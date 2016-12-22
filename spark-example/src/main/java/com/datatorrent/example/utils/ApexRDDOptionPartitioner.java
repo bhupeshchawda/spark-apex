@@ -1,12 +1,17 @@
 package com.datatorrent.example.utils;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.Partitioner;
 import scala.Option;
+
+import java.io.Serializable;
 
 /**
  * Created by harsh on 12/12/16.
  */
-public class ApexRDDOptionPartitioner extends Option<Partitioner>{
+@DefaultSerializer(JavaSerializer.class)
+public class ApexRDDOptionPartitioner extends Option<Partitioner> implements Serializable{
     public ApexRDDOptionPartitioner(){}
     @Override
     public boolean isEmpty() {

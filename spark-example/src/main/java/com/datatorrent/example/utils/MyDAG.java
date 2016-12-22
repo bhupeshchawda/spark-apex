@@ -2,6 +2,8 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Operator;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import java.io.Serializable;
 import java.util.Stack;
@@ -10,7 +12,10 @@ import java.util.Stack;
  * Created by anurag on 3/12/16.
  */
 
+@DefaultSerializer(JavaSerializer.class)
 public class MyDAG extends LogicalPlan implements Serializable{
+    public MyDAG(){}
+
     public  String getLastOperatorName() {
         return lastOperatorName;
     }

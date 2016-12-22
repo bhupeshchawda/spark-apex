@@ -3,8 +3,8 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.mllib.linalg.SparseVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function1;
@@ -12,7 +12,7 @@ import scala.Function1;
 import java.io.Serializable;
 
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator<T> extends MyBaseOperator implements Serializable {
+public class MapPartitionOperator<T> extends MyBaseOperator implements Serializable {
     int id=0;
     @Override
     public void setup(Context.OperatorContext context) {
@@ -20,23 +20,29 @@ public class MapOperator<T> extends MyBaseOperator implements Serializable {
         id=context.getId();
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
-    @FieldSerializer.Bind(JavaSerializer.class)
     public Function1 f;
-    public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
+    public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-                try {
-                    output.emit((T) f.apply(tuple));
-                } catch (Exception e){
-                    log.info("Exception Occured Due to {} ",tuple);
-                    output.emit(tuple);
-                }
+            try {
+                SparseVector v = (SparseVector) tuple;
+                output.emit(f.apply(((SparseVector) tuple).asML()));
+            } catch (Exception e){
+                log.info("Exception Occured Due to {} ",tuple.getClass());
+                e.printStackTrace();
+//                output.emit(tuple);
+            }
         }
     };
 
 
-    public DefaultOutputPortSerializable<T> getOutputPort() {
+    @Override
+    public DefaultInputPortSerializable<Object> getInputPort() {
+        return null;
+    }
+
+    public DefaultOutputPortSerializable getOutputPort() {
         return this.output;
     }
 
@@ -48,9 +54,6 @@ public class MapOperator<T> extends MyBaseOperator implements Serializable {
         return null;
     }
 
-    public DefaultInputPortSerializable<Object> getInputPort() {
-        return (DefaultInputPortSerializable<Object>) this.input;
-    }
 
     public boolean isInputPortOpen = true;
     public boolean isOutputPortOpen = true;

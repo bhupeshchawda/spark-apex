@@ -1,12 +1,12 @@
 package com.datatorrent.example;
 
 import com.datatorrent.example.utils.BaseInputOperator;
-import com.esotericsoftware.kryo.DefaultSerializer;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
-import scala.Serializable;
-@DefaultSerializer(JavaSerializer.class)
+
+import java.io.Serializable;
+
+//@DefaultSerializer(JavaSerializer.class)
 public class ApexContext extends SparkContext implements Serializable
 {
   public ApexContext()
