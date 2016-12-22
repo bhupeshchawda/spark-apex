@@ -12,13 +12,19 @@ import scala.reflect.ClassTag
   */
 
  class ScalaApexRDD[T:ClassTag](
-                                @transient private var sc: SparkContext,
-                                @transient private var deps: Seq[Dependency[_]]
+                                 @transient private var sc: SparkContext,
+                                 @transient private var deps: Seq[Dependency[_]]
                               ) extends RDD[T](sc,Nil) with Serializable{
 
   def this(@transient oneParent: RDD[_]) =
     this(oneParent.context, List(new OneToOneDependency(oneParent)))
   val dag=new MyDAG()
+
+  def getFunc[U](f: (Iterator[T]) => Iterator[U]): (TaskContext, Int, Iterator[T]) => Iterator[U] = {
+    val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
+    func
+  }
+
   override def treeAggregate[U: ClassTag](zeroValue: U)(
     seqOp: (U, T) => U,
     combOp: (U, U) => U,

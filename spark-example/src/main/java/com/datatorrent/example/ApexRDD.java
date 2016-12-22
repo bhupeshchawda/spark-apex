@@ -162,7 +162,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
-        m1.f=context.clean(f,false);
+        m1.f= getFunc(f);
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, m1.input);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
