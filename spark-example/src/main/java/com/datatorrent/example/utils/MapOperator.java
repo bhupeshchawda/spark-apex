@@ -26,7 +26,6 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
 
     Logger log = LoggerFactory.getLogger(MapOperator.class);
     public Function1 f;
-    public Function ff;
 
     public DefaultOutputPortSerializable<U> output = new DefaultOutputPortSerializable<U>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
