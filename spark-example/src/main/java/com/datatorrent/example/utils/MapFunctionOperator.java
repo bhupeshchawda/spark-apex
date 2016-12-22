@@ -12,7 +12,7 @@ import org.apache.spark.api.java.function.*;
 import scala.Tuple2;
 
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator1<T> extends MyBaseOperator implements Serializable {
+public class MapFunctionOperator<T> extends MyBaseOperator implements Serializable {
 
     @Override
     public void setup(Context.OperatorContext context) {
