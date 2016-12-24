@@ -361,10 +361,10 @@ public class ApexRDD<T> extends ApexRDDs<T> {
     public <U> RDD<U> mapPartitions(Function1<Iterator<T>, Iterator<U>> f, boolean preservesPartitioning, ClassTag<U> evidence$6) {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartitions " , new MapOperator());
-        m1.f=f;
+        MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartitionOperator " , new MapPartitionOperator());
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionsStream ", currentOutputPort, m1.input);
         cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        m1.f= getFunc(f);
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
         return temp;

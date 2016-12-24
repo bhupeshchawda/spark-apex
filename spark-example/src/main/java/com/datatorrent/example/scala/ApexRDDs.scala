@@ -43,6 +43,12 @@ abstract class ApexRDDs[T: ClassTag](
     val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
     func
   }
+/*
+  def scalaIter(iterator: java.util.Iterator): Iterator={
+    val iter = iterator.asInstanceOf[Iterator]
+    iter
+  }
+*/
 
 
 }
