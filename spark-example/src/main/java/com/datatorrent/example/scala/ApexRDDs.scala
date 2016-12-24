@@ -39,6 +39,12 @@ abstract class ApexRDDs[T: ClassTag](
     return scalamap
   }
 
+  def getFunc[U](f: (Iterator[T]) => Iterator[U]): (TaskContext, Int, Iterator[T]) => Iterator[U] = {
+    val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
+    func
+  }
+
+
 }
 
 object ApexRDDs {

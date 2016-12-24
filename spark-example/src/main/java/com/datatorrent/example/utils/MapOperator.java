@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory;
 import scala.Function1;
 
 import java.io.Serializable;
-import org.apache.spark.api.java.function.*;
+
+import scala.collection.Iterable;
 
 @DefaultSerializer(JavaSerializer.class)
 public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
@@ -17,7 +18,6 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         ID=context.getId();
-
     }
 
     public int getID() {
