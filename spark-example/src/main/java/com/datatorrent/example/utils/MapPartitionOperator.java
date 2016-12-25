@@ -8,13 +8,17 @@ import org.apache.spark.TaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function3;
-import scala.collection.Iterator;
+import scala.collection.immutable.List;
+import scala.collection.immutable.List$;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 @DefaultSerializer(JavaSerializer.class)
 public class MapPartitionOperator<T,U> extends MyBaseOperator implements Serializable {
     int id=0;
+    List<T>  rddList= List$.MODULE$.empty();
+    ArrayList<T> rddData = new ArrayList<>();
     public TaskContext taskContext;
     public Object object;
     @Override
@@ -22,15 +26,15 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
         super.setup(context);
         id=context.getId();
     }
-    Logger log = LoggerFactory.getLogger(MapOperator.class);
-    public Function3<TaskContext, Object, Iterator<T>, Iterator<U>> f;
+    Logger log = LoggerFactory.getLogger(MapPartitionOperator.class);
+    public Function3 f;
     public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
-    public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
+    public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
-        public void process(Object tuple) {
+        public void process(T tuple) {
             try {
-                output.emit(f.apply(taskContext,object, (Iterator<T>) tuple));
-            } catch (Exception e){
+                rddData.add(tuple);
+            } catch ( Exception e){
                 log.info("Exception Occured Due to {} ",tuple.getClass());
                 e.printStackTrace();
 //                output.emit(tuple);
@@ -38,6 +42,11 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
         }
     };
 
+    @Override
+    public void endWindow() {
+        output.emit(f.apply(taskContext, 0,
+                scala.collection.JavaConversions.asScalaIterator(rddData.iterator())));
+    }
 
     @Override
     public DefaultInputPortSerializable<Object> getInputPort() {

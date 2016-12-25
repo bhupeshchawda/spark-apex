@@ -3,7 +3,6 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,6 @@ public class MapOperator<T> extends MyBaseOperator implements Serializable {
         id=context.getId();
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
-    @FieldSerializer.Bind(JavaSerializer.class)
     public Function1 f;
     public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {

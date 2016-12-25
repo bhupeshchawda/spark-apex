@@ -19,7 +19,7 @@ public class MapOperatorFunction<T> extends MyBaseOperator implements Serializab
         id=context.getId();
 
     }
-    Logger log = LoggerFactory.getLogger(MapOperator.class);
+    Logger log = LoggerFactory.getLogger(MapOperatorFunction.class);
     public Function f;
     public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {

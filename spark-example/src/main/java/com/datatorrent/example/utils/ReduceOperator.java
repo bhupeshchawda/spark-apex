@@ -3,18 +3,27 @@ package com.datatorrent.example.utils;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.TaskContext;
+import scala.Function1;
 import scala.Function2;
 
 import java.io.Serializable;
-@DefaultSerializer(JavaSerializer.class)
-public class ReduceOperator extends MyBaseOperator implements Serializable
-{
-  public Function2 f;
-  public Object previousValue = null;
-  public Object finalValue = null;
-  private boolean done = false;
+import java.util.ArrayList;
 
-  public ReduceOperator() {}
+@DefaultSerializer(JavaSerializer.class)
+public class ReduceOperator<T> extends MyBaseOperator implements Serializable
+{
+  public Function2<T,T,T> f;
+  public Function1 f1;
+  public T previousValue = null;
+  public T finalValue = null;
+  private boolean done = false;
+    ArrayList<T> rddData = new ArrayList<>();
+    public TaskContext taskContext;
+    public Object object;
+  public ReduceOperator() {
+
+  }
 
     public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
         return null;
@@ -28,20 +37,34 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
     }
   }
 
-  public final  DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
+
+    public final  DefaultInputPortSerializable<T>   input = new DefaultInputPortSerializable<T>() {
     @Override
-    public void process(Object tuple)
+    public void process(T tuple)
     {
       if (previousValue == null) {
         previousValue = tuple;
         finalValue = tuple;
       } else {
           previousValue = tuple;
-          finalValue = f.apply(finalValue, previousValue);
+          try {
+              finalValue = f.apply(finalValue, previousValue);
+          }
+          catch (ClassCastException classCastException){
+
+//              finalValue= (T) f1.apply(previousValue);
+
+            classCastException.printStackTrace();
+          }
       }
 
     }
   };
+    @Override
+    public void endWindow() {
+//        output.emit(f3.apply(taskContext, 0,
+//                scala.collection.JavaConversions.asScalaIterator(rddData.iterator())));
+    }
 
   public final  DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
     @Override
@@ -64,11 +87,8 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
   }
 
   public DefaultInputPortSerializable<Object> getInputPort(){
-    return this.input;
+    return (DefaultInputPortSerializable<Object>) this.input;
   }
-  public boolean isInputPortOpen=true;
-  public boolean isOutputPortOpen=true;
-  public boolean isControlInputOpen=true;
-  public boolean isControlOutputOpen=true;
+
 
 }

@@ -155,14 +155,13 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     }
 
-
     @Override
     public <U> RDD<U> mapPartitions(Function1<Iterator<T>, Iterator<U>> f, boolean preservesPartitioning, ClassTag<U> evidence$6) {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
-        m1.f= getFunc(f);
+        m1.f=getFunc(f);
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, m1.input);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
@@ -179,8 +178,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         controlOutput= getControlOutput(cloneDag);
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
        // cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        reduceOperator.f = f;
-
+        reduceOperator.f = context.clean(f,true);
+        reduceOperator.f1=getFunc(f);
         Assert.assertTrue(currentOutputPort != null);
         cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);

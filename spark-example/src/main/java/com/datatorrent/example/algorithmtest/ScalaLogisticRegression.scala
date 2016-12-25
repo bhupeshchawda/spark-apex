@@ -5,10 +5,7 @@ package com.datatorrent.example.algorithmtest
   */
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, LogisticRegressionWithLBFGS}
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.mllib.feature.StandardScalerModel
-import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.mllib.stat.MultivariateOnlineSummarizer
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 class ScalaLogisticRegression[T]{}
@@ -23,19 +20,16 @@ object ScalaLogisticRegression {
     val splits = data.randomSplit(Array(0.6, 0.4), seed = 11L)
     val training = splits(0).cache()
     val test = splits(1)
-    val zeroValue=new MultivariateOnlineSummarizer
-    val temp=training.map(_.features)
-    val d= temp.collect()
 
-    assert(false)
-    val summary=temp.treeAggregate(new MultivariateOnlineSummarizer)(
-      (aggregator, data) => aggregator.add(data),
-      (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
-    new StandardScalerModel(
-      Vectors.dense(summary.variance.toArray.map(v => math.sqrt(v))),
-      summary.mean,
-      true,
-      false)
+//    assert(false)
+//    val summary=temp.treeAggregate(new MultivariateOnlineSummarizer)(
+//      (aggregator, data) => aggregator.add(data),
+//      (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
+//    new StandardScalerModel(
+//      Vectors.dense(summary.variance.toArray.map(v => math.sqrt(v))),
+//      summary.mean,
+//      true,
+//      false)
 
     // Run training algorithm to build the model
     val model = new LogisticRegressionWithLBFGS()
