@@ -5,11 +5,12 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Function1;
 import scala.Function2;
 
 import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
-public class ReduceOperator extends MyBaseOperator implements Serializable
+public class ReduceOperator<T> extends MyBaseOperator implements Serializable
 {
   public Function2 f;
   public Object previousValue = null;
@@ -36,9 +37,9 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
     ID=context.getId();
   }
 
-  public final  DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
+  public final  DefaultInputPortSerializable<T>   input = new DefaultInputPortSerializable<T>() {
     @Override
-    public void process(Object tuple)
+    public void process(T tuple)
     {
       if (previousValue == null) {
         previousValue = tuple;
@@ -74,7 +75,7 @@ public class ReduceOperator extends MyBaseOperator implements Serializable
   }
 
   public DefaultInputPortSerializable<Object> getInputPort(){
-    return this.input;
+    return (DefaultInputPortSerializable<Object>) this.input;
   }
   public boolean isInputPortOpen=true;
   public boolean isOutputPortOpen=true;

@@ -7,6 +7,8 @@ import com.datatorrent.example.scala.ApexRDDs;
 import com.datatorrent.example.scala.IteratorFunction;
 import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -28,14 +30,13 @@ import scala.collection.Map;
 import scala.math.Ordering;
 import scala.reflect.ClassTag;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.lang.Boolean;
 import java.util.HashMap;
 import java.util.Random;
 
-public class ApexRDD<T> extends ApexRDDs<T> {
+@DefaultSerializer(JavaSerializer.class)
+public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     private static final long serialVersionUID = -3545979419189338756L;
 
     public MyBaseOperator currentOperator;
@@ -129,7 +130,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
-        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
         return temp;
@@ -142,7 +143,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         MapFunctionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map1 " , new MapFunctionOperator());
         m1.ff=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream1 ", currentOutputPort, m1.input);
-        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
         return temp;
@@ -175,15 +176,15 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
-        cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        reduceOperator.f = f;
+        //cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        reduceOperator.f = context.clean(f,true);
 
         Assert.assertTrue(currentOutputPort != null);
         cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
 
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
@@ -279,11 +280,11 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         DefaultOutputPortSerializable currentCountOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
         CountOperator countOperator = cloneDag.addOperator(System.currentTimeMillis()+ " CountOperator " , CountOperator.class);
-        cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Count Input Stream", currentCountOutputPort, countOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputDataCount");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         cloneDag.validate();
@@ -310,10 +311,10 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         FirstOpertaor firstOpertaor = cloneDag.addOperator(System.currentTimeMillis()+" FirstOperator",FirstOpertaor.class);
-        cloneDag.setInputPortAttribute(firstOpertaor.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(firstOpertaor.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+"FirstTupleStream",currentOutputPort,firstOpertaor.input);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputDataFirst");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", firstOpertaor.output, writer.input);
         cloneDag.validate();
@@ -341,13 +342,13 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
         randomSplitOperator.weights=weights;
-        cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentOutputPort, randomSplitOperator.input);
         DefaultOutputPortSerializable currentSplitOutputPort2 = getCurrentOutputPort(cloneDag2);
         RandomSplitOperator randomSplitOperator2 = cloneDag2.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
         randomSplitOperator2.weights=weights;
         randomSplitOperator2.flag=true;
-        cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
         ApexRDD temp1 = (ApexRDD) SerializationUtils.clone(this);
         temp1.dag=cloneDag;
@@ -363,8 +364,8 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartitionOperator " , new MapPartitionOperator());
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionsStream ", currentOutputPort, m1.input);
-        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        m1.f= getFunc(f);
+        //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        m1.f= f;
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
         return temp;
@@ -381,7 +382,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         CountByVlaueOperator countByVlaueOperator =cloneDag.addOperator(System.currentTimeMillis()+" CountByVlaueOperator",CountByVlaueOperator.class);
         cloneDag.addStream(System.currentTimeMillis()+" CountValue Stream",currentOutputPort,countByVlaueOperator.getInputPort());
-        cloneDag.setInputPortAttribute(countByVlaueOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(countByVlaueOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         controlOutput= getControlOutput(cloneDag);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countByVlaueOperator.controlDone);
         cloneDag.validate();
@@ -411,7 +412,7 @@ public class ApexRDD<T> extends ApexRDDs<T> {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         CollectOperator collectOperator =cloneDag.addOperator(System.currentTimeMillis()+" Collect Operator",CollectOperator.class);
-        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        //cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
         cloneDag.validate();
 

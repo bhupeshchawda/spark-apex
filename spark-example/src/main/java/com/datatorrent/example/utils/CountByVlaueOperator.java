@@ -43,7 +43,7 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
         @Override
         public void process(Object tuple) {
             {
-                log.info("tuple"+ tuple);
+                //log.info("tuple"+ tuple);
                 if(hashMap.containsKey(tuple)) {
                     int x= hashMap.get(tuple).intValue();
                     hashMap.put(tuple, new Integer(x+1));

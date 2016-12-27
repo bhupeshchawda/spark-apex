@@ -12,7 +12,7 @@ import java.io.Serializable;
  * Created by harsh on 2/12/16.
  */
 
-public class BaseInputOperator extends MyBaseOperator implements InputOperator,Serializable {
+public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOperator,Serializable {
     private BufferedReader br;
     public String path;
 
@@ -22,7 +22,7 @@ public class BaseInputOperator extends MyBaseOperator implements InputOperator,S
     public final transient DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
     public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
-    public DefaultInputPortSerializable<Object> getInputPort() {
+    public DefaultInputPortSerializable<T> getInputPort() {
         return null;
     }
 

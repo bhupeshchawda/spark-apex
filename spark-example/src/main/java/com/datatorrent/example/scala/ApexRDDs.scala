@@ -14,7 +14,7 @@ import scala.reflect.ClassTag
 abstract class ApexRDDs[T: ClassTag](
                                      @transient private var sc: SparkContext,
                                      @transient private var deps: Seq[Dependency[_]]
-                                   ) extends RDD[T](sc,Nil){
+                                   ) extends RDD[T](sc,Nil) with Serializable{
 
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = ???
@@ -43,14 +43,16 @@ abstract class ApexRDDs[T: ClassTag](
     val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
     func
   }
-/*
-  def scalaIter(iterator: java.util.Iterator): Iterator={
-    val iter = iterator.asInstanceOf[Iterator]
-    iter
+  def getFunc(f: (T, T) => T): (Iterator[T]) => Option[T] = {
+    val reducePartition: Iterator[T] => Option[T] = iter => {
+      if (iter.hasNext) {
+        Some(iter.reduceLeft(f))
+      } else {
+        None
+      }
+    }
+    reducePartition
   }
-*/
-
-
 }
 
 object ApexRDDs {

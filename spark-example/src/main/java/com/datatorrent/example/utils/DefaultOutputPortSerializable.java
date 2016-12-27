@@ -3,8 +3,6 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.DefaultOutputPort;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import org.apache.commons.lang.SerializationUtils;
-
 import java.io.Serializable;
 
 /**
