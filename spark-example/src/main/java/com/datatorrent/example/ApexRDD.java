@@ -438,10 +438,19 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
     @Override
     public void foreach(Function1<T, BoxedUnit> f) {
+
+    }
+
+    public void foreach(VoidFunction<T> voidFunction) {
+
+    }
+
+    public void foreach(Function<T, BoxedUnit> function) {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         ForeachOpeator foreach = cloneDag.addOperator(System.currentTimeMillis()+" ForEachOperator",new ForeachOpeator());
-        foreach.f=f;
+
+        foreach.f= function;
         cloneDag.addStream(System.currentTimeMillis()+" ForEachStream", currentOutputPort, foreach.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
@@ -456,10 +465,6 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(10000);
-    }
-
-    public void foreach(VoidFunction<T> voidFunction) {
-        this.foreach(voidFunction);
     }
 
     /*public void foreach(Function<T, BoxedUnit> function) {

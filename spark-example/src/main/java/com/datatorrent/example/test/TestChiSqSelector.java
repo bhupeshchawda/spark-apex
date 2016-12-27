@@ -58,13 +58,20 @@ public class TestChiSqSelector implements Serializable {
                 }
         );
         System.out.println(transformer.formatVersion()+" ::"+ filteredData.hashCode());
-
-        filteredData.foreach(new VoidFunction<LabeledPoint>() {
+        //alternative way to print filtered data
+        //printing in ForEachoperator
+        filteredData.foreach(new Function<LabeledPoint, BoxedUnit>() {
+            @Override
+            public BoxedUnit call(LabeledPoint v1) throws Exception {
+                return this.call(v1);
+            }
+        });
+        /*filteredData.foreach(new VoidFunction<LabeledPoint>() {
             @Override
             public void call(LabeledPoint labeledPoint) throws Exception {
                 System.out.println(labeledPoint.toString());
             }
-        });
+        });*/
 
     }
     public static void main(String args[]){
