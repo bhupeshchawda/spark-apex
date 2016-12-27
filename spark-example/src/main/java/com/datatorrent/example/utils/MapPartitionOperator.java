@@ -7,9 +7,8 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.spark.TaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Function3;
-import scala.collection.immutable.List;
-import scala.collection.immutable.List$;
+import scala.Function1;
+import scala.collection.Iterator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ import java.util.ArrayList;
 @DefaultSerializer(JavaSerializer.class)
 public class MapPartitionOperator<T,U> extends MyBaseOperator implements Serializable {
     int id=0;
-    List<T>  rddList= List$.MODULE$.empty();
     ArrayList<T> rddData = new ArrayList<>();
     public TaskContext taskContext;
     public Object object;
@@ -27,8 +25,8 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
         id=context.getId();
     }
     Logger log = LoggerFactory.getLogger(MapPartitionOperator.class);
-    public Function3 f;
-    public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
+    public Function1<Iterator<T>, Iterator<U>> f;
+    public DefaultOutputPortSerializable<U> output = new DefaultOutputPortSerializable();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
@@ -44,12 +42,14 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
 
     @Override
     public void endWindow() {
-        output.emit(f.apply(taskContext, 0,
-                scala.collection.JavaConversions.asScalaIterator(rddData.iterator())));
+        Iterator<U> result = f.apply(scala.collection.JavaConversions.asScalaIterator(rddData.listIterator()));
+        while (result.hasNext()) {
+            output.emit(result.next());
+        }
     }
 
     @Override
-    public DefaultInputPortSerializable<Object> getInputPort() {
+    public DefaultInputPortSerializable<T> getInputPort() {
         return null;
     }
 

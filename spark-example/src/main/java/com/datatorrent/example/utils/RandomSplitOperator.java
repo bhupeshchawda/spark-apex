@@ -13,7 +13,7 @@ import java.io.Serializable;
  * Created by harsh on 8/12/16.
  */
 @DefaultSerializer(JavaSerializer.class)
-public class RandomSplitOperator extends MyBaseOperator implements Serializable {
+public class RandomSplitOperator<T> extends MyBaseOperator implements Serializable {
 
     public double[] weights;
 
@@ -38,9 +38,9 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
     private int index=0;
     Logger log = LoggerFactory.getLogger(RandomSplitOperator.class);
 
-    public DefaultInputPortSerializable<Object> input = new DefaultInputPortSerializable<Object>() {
+    public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
-        public void process(Object tuple) {
+        public void process(T tuple) {
             index++;
             if(index%a==0 && !flag){
                 output.emit(tuple);
@@ -61,7 +61,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
 
 
     public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
-    public DefaultInputPortSerializable<Object> getInputPort() {
+    public DefaultInputPortSerializable<T> getInputPort() {
         return input;
     }
 

@@ -48,7 +48,7 @@ public class LogisticRegressionTest {
         System.out.println("Accuracy = " + accuracy);
 
 // Save and load model
-        model.save(sc, "target/tmp/javaLogisticRegressionWithLBFGSModel");
+        model.save(sc, "target/tmp/JAVALogisticRegressionWithLBFGSModel");
         LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
                 "target/tmp/javaLogisticRegressionWithLBFGSModel");
     }

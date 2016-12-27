@@ -16,7 +16,7 @@ public class ReduceOperator<T> extends MyBaseOperator implements Serializable
   public Function2<T,T,T> f;
   public Function1 f1;
   public T previousValue = null;
-  public T finalValue = null;
+  public static Object finalValue;
   private boolean done = false;
     ArrayList<T> rddData = new ArrayList<>();
     public TaskContext taskContext;
@@ -48,7 +48,7 @@ public class ReduceOperator<T> extends MyBaseOperator implements Serializable
       } else {
           previousValue = tuple;
           try {
-              finalValue = f.apply(finalValue, previousValue);
+              finalValue = f.apply((T) finalValue, previousValue);
           }
           catch (ClassCastException classCastException){
 
@@ -86,8 +86,8 @@ public class ReduceOperator<T> extends MyBaseOperator implements Serializable
     return null;
   }
 
-  public DefaultInputPortSerializable<Object> getInputPort(){
-    return (DefaultInputPortSerializable<Object>) this.input;
+  public DefaultInputPortSerializable<T> getInputPort(){
+    return  this.input;
   }
 
 

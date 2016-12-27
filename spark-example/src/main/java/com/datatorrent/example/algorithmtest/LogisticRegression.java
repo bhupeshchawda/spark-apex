@@ -1,5 +1,6 @@
 package com.datatorrent.example.algorithmtest;
 
+
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
@@ -42,15 +43,17 @@ public class LogisticRegression {
                 }
         );
 
+        model.save(sc, "/home/anurag/spark-apex/spark-example/target/tmp/javaLogisticRegressionWithLBFGSModel");
+        LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
+                "/home/anurag/spark-apex/spark-example/target/tmp/javaLogisticRegressionWithLBFGSModel");
         // Get evaluation metrics.
+
         MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels);
         double accuracy = metrics.accuracy();
         System.out.println("Accuracy = " + accuracy);
 
 // Save and load model
-        model.save(sc, "target/tmp/javaLogisticRegressionWithLBFGSModel");
-        LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
-                "target/tmp/javaLogisticRegressionWithLBFGSModel");
+
     }
 
 }

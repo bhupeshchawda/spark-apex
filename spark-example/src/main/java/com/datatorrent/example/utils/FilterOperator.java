@@ -32,7 +32,7 @@ public class FilterOperator<T> extends MyBaseOperator implements Serializable
   public final  DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
 
     @Override
-    public DefaultInputPortSerializable<Object> getInputPort() {
+    public DefaultInputPortSerializable<T> getInputPort() {
         return null;
     }
 

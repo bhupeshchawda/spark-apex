@@ -6,7 +6,7 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
-public class CountOperator extends MyBaseOperator implements Serializable
+public class CountOperator<T> extends MyBaseOperator implements Serializable
 {
     private boolean done = false;
 
@@ -25,9 +25,9 @@ public class CountOperator extends MyBaseOperator implements Serializable
         }
     }
     Integer count =0;
-    public final  DefaultInputPortSerializable<Object>   input = new DefaultInputPortSerializable<Object>() {
+    public final  DefaultInputPortSerializable<T>   input = new DefaultInputPortSerializable<T>() {
         @Override
-        public void process(Object tuple)
+        public void process(T tuple)
         {
             count++;
         }
@@ -53,7 +53,7 @@ public class CountOperator extends MyBaseOperator implements Serializable
         return null;
     }
 
-    public DefaultInputPortSerializable<Object> getInputPort(){
+    public DefaultInputPortSerializable<T> getInputPort(){
         return this.input;
     }
 

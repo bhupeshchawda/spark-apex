@@ -14,15 +14,16 @@ object ScalaLogisticRegression {
     val conf = new SparkConf().setMaster("local").setAppName("Simple Application")
     val sc = new SparkContext(conf)
     // Load training data in LIBSVM format.
-    val data = MLUtils.loadLibSVMFile(sc, "/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt")
+    val data2 = MLUtils.loadLibSVMFile(sc, "/home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt")
 
     // Split data into training (60%) and test (40%).
-    val splits = data.randomSplit(Array(0.6, 0.4), seed = 11L)
+    val splits = data2.randomSplit(Array(0.6, 0.4), seed = 11L)
     val training = splits(0).cache()
     val test = splits(1)
 
-//    assert(false)
-//    val summary=temp.treeAggregate(new MultivariateOnlineSummarizer)(
+//    val data=training.map(_.features)
+//
+//    val summary=data.treeAggregate(new MultivariateOnlineSummarizer)(
 //      (aggregator, data) => aggregator.add(data),
 //      (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
 //    new StandardScalerModel(
@@ -30,7 +31,8 @@ object ScalaLogisticRegression {
 //      summary.mean,
 //      true,
 //      false)
-
+//    println(summary.variance)
+//    assert(false)
     // Run training algorithm to build the model
     val model = new LogisticRegressionWithLBFGS()
       .setNumClasses(10)
@@ -44,7 +46,7 @@ object ScalaLogisticRegression {
 
     // Get evaluation metrics.
     val metrics = new MulticlassMetrics(predictionAndLabels)
-    val accuracy = metrics.accuracy
+    val accuracy = metrics
     println(s"Accuracy = $accuracy")
 
     // Save and load model

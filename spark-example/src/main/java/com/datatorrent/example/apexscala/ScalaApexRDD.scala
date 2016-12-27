@@ -26,16 +26,16 @@ import scala.reflect.ClassTag
   }
 
 
-  def getFunc(f: (T, T) => T): (Iterator[T]) => Option[T] = {
-    val reducePartition: Iterator[T] => Option[T] = iter => {
-      if (iter.hasNext) {
-        Some(iter.reduceLeft(f))
-      } else {
-        None
-      }
-    }
-    reducePartition
-  }
+//  def getFunc(f: (T, T) => T): (Iterator[T]) => Option[T] = {
+//    val reducePartition: Iterator[T] => Option[T] = iter => {
+//      if (iter.hasNext) {
+//        Some(iter.reduceLeft(f))
+//      } else {
+//        None
+//      }
+//    }
+//    reducePartition
+//  }
 
   override def treeAggregate[U: ClassTag](zeroValue: U)(
     seqOp: (U, T) => U,

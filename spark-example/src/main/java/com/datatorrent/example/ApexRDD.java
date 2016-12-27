@@ -160,10 +160,14 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        controlOutput=getControlOutput(cloneDag);
         MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
-        m1.f=getFunc(f);
+
+//        m1.f=getFunc(f);
+        m1.f = f;
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, m1.input);
+//        cloneDag.addStream(System.currentTimeMillis()+" Control Stream",controlOutput,m1.controlDone);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
@@ -179,7 +183,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
        // cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         reduceOperator.f = context.clean(f,true);
-        reduceOperator.f1=getFunc(f);
+//        reduceOperator.f1=f;
         Assert.assertTrue(currentOutputPort != null);
         cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
@@ -204,8 +208,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
-        Integer reduce = fileReader("/tmp/outputData");
-        return (T) reduce;
+        T reduce = (T) reduceOperator.finalValue;
+        return reduce;
     }
 
     public static Integer fileReader(String path){

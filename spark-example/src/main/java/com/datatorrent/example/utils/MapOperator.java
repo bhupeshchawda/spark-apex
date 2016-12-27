@@ -11,30 +11,30 @@ import scala.Function1;
 import java.io.Serializable;
 
 @DefaultSerializer(JavaSerializer.class)
-public class MapOperator<T> extends MyBaseOperator implements Serializable {
+public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
     int id=0;
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
-        id=context.getId();
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
     public Function1 f;
-    public DefaultOutputPortSerializable<T> output = new DefaultOutputPortSerializable<T>();
-    public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
+    public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable<>();
+    public DefaultInputPortSerializable input = new DefaultInputPortSerializable() {
         @Override
-        public void process(T tuple) {
+        public void process(Object tuple) {
+
                 try {
-                    output.emit((T) f.apply(tuple));
+                    output.emit( f.apply(tuple));
                 } catch (Exception e){
                     log.info("Exception Occured Due to {} ",tuple);
-                    output.emit(tuple);
+
                 }
         }
     };
 
 
-    public DefaultOutputPortSerializable<T> getOutputPort() {
+    public DefaultOutputPortSerializable<Object> getOutputPort() {
         return this.output;
     }
 
@@ -46,8 +46,8 @@ public class MapOperator<T> extends MyBaseOperator implements Serializable {
         return null;
     }
 
-    public DefaultInputPortSerializable<Object> getInputPort() {
-        return (DefaultInputPortSerializable<Object>) this.input;
+    public DefaultInputPortSerializable<T> getInputPort() {
+        return this.input;
     }
 
     public boolean isInputPortOpen = true;

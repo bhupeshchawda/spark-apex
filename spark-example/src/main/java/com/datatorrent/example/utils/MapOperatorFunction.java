@@ -30,6 +30,7 @@ public class MapOperatorFunction<T> extends MyBaseOperator implements Serializab
                 output.emit((T) f.call(tuple));
             }
             catch (Exception e){
+                e.printStackTrace();
                 log.info("Exception Occured Due to {} ",tuple);
                 output.emit(tuple);
             }
@@ -50,8 +51,8 @@ public class MapOperatorFunction<T> extends MyBaseOperator implements Serializab
         return null;
     }
 
-    public DefaultInputPortSerializable<Object> getInputPort() {
-        return (DefaultInputPortSerializable<Object>) this.input;
+    public DefaultInputPortSerializable<T> getInputPort() {
+        return  this.input;
     }
 
     public boolean isInputPortOpen = true;
