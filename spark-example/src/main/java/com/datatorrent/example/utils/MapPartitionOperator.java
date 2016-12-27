@@ -54,7 +54,6 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
                     output.emit(iterU.next());*/
             try{
                 rddData.add(tuple);
-                log.info(String.valueOf((f.apply(iterT)).getClass()));
             } catch (Exception e){
                 log.info("Exception Occured Due to {}  {} of OperatorID {} in MapPartition",tuple,tuple.getClass(),ID);
                 e.printStackTrace();
