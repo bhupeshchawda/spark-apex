@@ -44,6 +44,7 @@ public class TestChiSqSelector implements Serializable {
         System.out.println("before transformer");
         //Assert.assertTrue(discretizedData!=null);
         final ChiSqSelectorModel transformer = selector.fit(discretizedData);
+        System.out.println(transformer.formatVersion());
 
     }
     public static void main(String args[]){

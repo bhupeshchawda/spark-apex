@@ -33,7 +33,7 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     };
 
     Logger log = LoggerFactory.getLogger(CountByVlaueOperator.class);
-    public static HashMap<Object, Integer> hashMap;
+    public static HashMap<Object, Long> hashMap;
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
@@ -45,11 +45,11 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
             {
                 //log.info("tuple"+ tuple);
                 if(hashMap.containsKey(tuple)) {
-                    int x= hashMap.get(tuple).intValue();
-                    hashMap.put(tuple, new Integer(x+1));
+                    long x= hashMap.get(tuple).longValue();
+                    hashMap.put(tuple, new Long(x+1));
                 }
                 else {
-                    hashMap.put(tuple, 1);
+                    hashMap.put(tuple, (long) 1.0);
                 }
             }
         }
