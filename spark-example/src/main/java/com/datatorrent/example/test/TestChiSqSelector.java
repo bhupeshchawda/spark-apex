@@ -5,7 +5,9 @@ import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.mllib.feature.ChiSqSelector;
 import org.apache.spark.mllib.feature.ChiSqSelectorModel;
 import org.apache.spark.mllib.linalg.Vectors;
@@ -45,7 +47,23 @@ public class TestChiSqSelector implements Serializable {
         //Assert.assertTrue(discretizedData!=null);
         final ChiSqSelectorModel transformer = selector.fit(discretizedData);
         System.out.println(transformer.formatVersion());
-
+        transformer.save(sc,"/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data");
+        ApexRDD<LabeledPoint> filteredData = (ApexRDD<LabeledPoint>) discretizedData.map(
+                new Function<LabeledPoint, LabeledPoint>() {
+                    @Override
+                    public LabeledPoint call(LabeledPoint lp) {
+                        return new LabeledPoint(lp.label(), transformer.transform(lp.features()));
+                    }
+                }
+        );
+        System.out.println(transformer.formatVersion()+" ::"+ filteredData.hashCode());
+      /*  filteredData.foreach(new VoidFunction<LabeledPoint>() {
+            @Override
+            public void call(LabeledPoint labeledPoint) throws Exception {
+                System.out.println(labeledPoint.toString());
+            }
+        });
+*/
     }
     public static void main(String args[]){
         ApexContext sc  = new ApexContext(new ApexConf().setMaster("local").setAppName("ApexApp_ChiSquare"));

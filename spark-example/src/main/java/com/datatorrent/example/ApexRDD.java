@@ -29,6 +29,7 @@ import scala.collection.Iterator;
 import scala.collection.Map;
 import scala.math.Ordering;
 import scala.reflect.ClassTag;
+import scala.runtime.BoxedUnit;
 
 import java.io.*;
 import java.lang.Boolean;
@@ -369,6 +370,12 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
         return temp;
+    }
+
+    @Override
+    public void foreach(Function1<T, BoxedUnit> f) {
+        super.foreach(f);
+
     }
 
     @Override
