@@ -20,12 +20,17 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
     PrintWriter out;
     Logger log = LoggerFactory.getLogger(CollectOperator.class);
     public CollectOperator(){}
-    public static ArrayList<Object> t;
+    public  static ArrayList<Object> t = new ArrayList<>();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-            t.add(tuple);
-            count++;
+            try {
+                t.add(tuple);
+                count++;
+            } catch (Exception e) {
+                System.out.println("The ERROR has OCCURED");
+                e.printStackTrace();
+            }
         }
     };
     int count=0;
