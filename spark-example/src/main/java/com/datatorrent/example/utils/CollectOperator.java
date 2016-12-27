@@ -26,7 +26,6 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
         public void process(T tuple) {
             t.add(tuple);
             count++;
-            log.info("Tuples in inputport {}",tuple.toString());
         }
     };
     int count=0;

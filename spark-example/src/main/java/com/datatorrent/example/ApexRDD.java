@@ -7,32 +7,35 @@ import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.math.random.RandomGenerator;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.spark.Partition;
-import org.apache.spark.Partitioner;
-import org.apache.spark.SparkContext;
-import org.apache.spark.TaskContext;
+import org.apache.spark.*;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.rdd.RDDOperationScope$;
-import org.apache.spark.rdd.ZippedPartitionsRDD2;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.sql.catalyst.expressions.AssertTrue;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.*;
 import scala.collection.Iterator;
+import scala.collection.TraversableOnce;
 import scala.reflect.ClassTag;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.Boolean;
-import java.util.Random;
+import java.util.*;
+
+import static java.util.Arrays.*;
+
+
 @DefaultSerializer(JavaSerializer.class)
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     private static final long serialVersionUID = -3545979419189338756L;
@@ -47,15 +50,19 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     protected Option<Partitioner> partitioner = new ApexRDDOptionPartitioner();
 
-
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
         this.dag=((ApexRDD<T>)rdd).dag;
-
     }
+
     @Override
     public Option<Partitioner> partitioner() {
         return  new ApexRDDOptionPartitioner();
+    }
+
+    @Override
+    public SparkContext sparkContext() {
+        return context;
     }
 
     @Override
@@ -107,50 +114,89 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     }
 
     @Override
-    public <B, V> RDD<V> zipPartitions(RDD<B> rdd2, Function2<Iterator<T>, Iterator<B>,
-            Iterator<V>> f, ClassTag<B> evidence$12, ClassTag<V> evidence$13) {
-        Assert.assertTrue(false);
-        ApexRDD<V> temp = (ApexRDD<V>) super.zipPartitions(rdd2, f, evidence$12, evidence$13);
-        temp.dag= (MyDAG) SerializationUtils.clone(this.dag);
-
+    public <U> RDD<U> flatMap(Function1<T, TraversableOnce<U>> f, ClassTag<U> evidence$4) {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Flat Map " , new MapOperator());
+        m1.f=f;
+//        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
+        cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
+        temp.dag=cloneDag;
         return temp;
     }
 
     @Override
-    public <B, V> RDD<V> zipPartitions(RDD<B> rdd2, boolean preservesPartitioning, Function2<Iterator<T>, Iterator<B>, Iterator<V>> f, ClassTag<B> evidence$10, ClassTag<V> evidence$11) {
-        ApexRDD<V> temp = (ApexRDD<V>) super.zipPartitions(rdd2, f, evidence$10, evidence$11);
-        temp.dag= (MyDAG) SerializationUtils.clone(this.dag);
-        return  temp;
-
+    public <U> RDD<Tuple2<T, U>> zip(RDD<U> other, ClassTag<U> evidence$9) {
+        other.collect();
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        ZipOperator<T,U> z = cloneDag.addOperator(System.currentTimeMillis()+ " ZipOperator " , new ZipOperator<T,U>());
+        z.other= Arrays.asList((T[]) other.collect());
+        z.count=z.other.size();
+        cloneDag.addStream( System.currentTimeMillis()+ " ZipOperator ", currentOutputPort, z.input);
+        cloneDag.setInputPortAttribute(z.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        ApexRDD<Tuple2<T,U>> temp= (ApexRDD<Tuple2<T,U>>) SerializationUtils.clone(this);
+        temp.dag=cloneDag;
+        return temp;
     }
 
     @Override
-    public <B, C, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, boolean preservesPartitioning, Function3<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<V>> f, ClassTag<B> evidence$14, ClassTag<C> evidence$15, ClassTag<V> evidence$16) {
-        Assert.assertTrue("2",false);
-        return super.zipPartitions(rdd2, rdd3, preservesPartitioning, f, evidence$14, evidence$15, evidence$16);
+    public T[] takeSample(boolean withReplacement, int num, long seed) {
+        Random random = new Random(seed);
+        T[] temp1 = this.collect();
+
+        ArrayList<T> temp2 = new ArrayList<>();
+        for(int i=0;i<num;i++){
+            temp2.add(temp1[random.nextInt(temp1.length)]);
+        }
+
+        return (T[]) temp2.toArray();
     }
 
     @Override
-    public <B, C, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, Function3<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<V>> f, ClassTag<B> evidence$17, ClassTag<C> evidence$18, ClassTag<V> evidence$19) {
-        Assert.assertTrue("3",false);
-        return super.zipPartitions(rdd2, rdd3, f, evidence$17, evidence$18, evidence$19);
-    }
+    public <U> U aggregate(U zeroValue, Function2<U, T, U> seqOp, Function2<U, U, U> combOp, ClassTag<U> evidence$29) {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        controlOutput= getControlOutput(cloneDag);
+        SeqOperator seqOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Sequence " , new SeqOperator());
+        seqOperator.zeroValue = zeroValue;
+        seqOperator.f = seqOp;
+        Assert.assertTrue(currentOutputPort != null);
+        cloneDag.addStream(System.currentTimeMillis()+" Sequence Input Stream", currentOutputPort, seqOperator.input);
 
-    @Override
-    public <B, C, D, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, RDD<D> rdd4, boolean preservesPartitioning, Function4<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<D>, Iterator<V>> f, ClassTag<B> evidence$20, ClassTag<C> evidence$21, ClassTag<D> evidence$22, ClassTag<V> evidence$23) {
-        Assert.assertTrue("4",false);
-        return super.zipPartitions(rdd2, rdd3, rdd4, preservesPartitioning, f, evidence$20, evidence$21, evidence$22, evidence$23);
-    }
+        ComOperator comOperator = cloneDag.addOperator(System.currentTimeMillis()+" Com Operator ", new ComOperator());
+        comOperator.zeroValue = zeroValue;
+        comOperator.f = combOp;
+        cloneDag.addStream(System.currentTimeMillis()+"Com Op input Stream", seqOperator.output, comOperator.input);
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        writer.setAbsoluteFilePath("/tmp/outputSeq");
+        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", comOperator.output, writer.input);
 
-    @Override
-    public <B, C, D, V> RDD<V> zipPartitions(RDD<B> rdd2, RDD<C> rdd3, RDD<D> rdd4, Function4<Iterator<T>, Iterator<B>, Iterator<C>, Iterator<D>, Iterator<V>> f, ClassTag<B> evidence$24, ClassTag<C> evidence$25, ClassTag<D> evidence$26, ClassTag<V> evidence$27) {
-        Assert.assertTrue("5",false);
-        return super.zipPartitions(rdd2, rdd3, rdd4, f, evidence$24, evidence$25, evidence$26, evidence$27);
+        cloneDag.validate();
+        log.info("DAG successfully validated");
+
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(3000);
+
+        ArrayList<U> result = (ArrayList<U>) comOperator.result;
+        System.out.println("Printing Aggregate : "+result.toString());
+        return null;
     }
 
     @Override
     public <U> U withScope(Function0<U> body) {
-        return RDDOperationScope$.MODULE$.withScope(context,false,body);
+        return (U)body;
     }
 
 

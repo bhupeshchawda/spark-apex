@@ -23,6 +23,7 @@ import scala.reflect.ClassTag
 
   override protected def getPartitions: Array[Partition] = ???
 }
+
 object ScalaApexRDD extends {
   implicit  def rddToPairRDDFunctions[K,V](rdd:RDD[(K,V)])
                                          ( implicit kt: ClassTag[K], vt: ClassTag[V], ord: Ordering[K] = null): PairRDDFunctions[K, V]={

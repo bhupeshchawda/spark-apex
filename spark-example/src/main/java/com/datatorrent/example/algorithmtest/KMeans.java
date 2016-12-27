@@ -11,7 +11,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 /**
  * Created by anurag on 19/12/16.
  */
-public class KMeans {
+public class KMeans{
     public static void main(String args[]){
         ApexContext jsc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Kmeans"));
         String path = "/home/krushika/spark-apex/spark-example/src/main/resources/data/kmeans_data.txt";
