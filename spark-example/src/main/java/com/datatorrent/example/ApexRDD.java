@@ -160,20 +160,15 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
-        SeqOperator seqOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Sequence " , new SeqOperator());
-        seqOperator.zeroValue = zeroValue;
-        seqOperator.f = seqOp;
+        AggregateOperator aggregateOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Aggregate Operator " , new AggregateOperator());
+        aggregateOperator.zeroValue = zeroValue;
+        aggregateOperator.seqFunction = seqOp;
+        aggregateOperator.combFunction = combOp;
         Assert.assertTrue(currentOutputPort != null);
-        cloneDag.addStream(System.currentTimeMillis()+" Sequence Input Stream", currentOutputPort, seqOperator.input);
-
-        ComOperator comOperator = cloneDag.addOperator(System.currentTimeMillis()+" Com Operator ", new ComOperator());
-        comOperator.zeroValue = zeroValue;
-        comOperator.f = combOp;
-        cloneDag.addStream(System.currentTimeMillis()+"Com Op input Stream", seqOperator.output, comOperator.input);
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        writer.setAbsoluteFilePath("/tmp/outputSeq");
-        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", comOperator.output, writer.input);
-
+        cloneDag.addStream(System.currentTimeMillis()+" Aggregator Operator Stream", currentOutputPort, aggregateOperator.input);
+        FileWriterOperator fileWriterOperator = cloneDag.addOperator(System.currentTimeMillis()+"FileWrite Operator from Aggregate",new FileWriterOperator());
+        fileWriterOperator.setAbsoluteFilePath("/tmp/aggregateOutput");
+        cloneDag.addStream(System.currentTimeMillis()+"File Operator Stream",aggregateOperator.output,fileWriterOperator.input);
         cloneDag.validate();
         log.info("DAG successfully validated");
 
@@ -189,9 +184,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
 
-        ArrayList<U> result = (ArrayList<U>) comOperator.result;
-        System.out.println("Printing Aggregate : "+result.toString());
-        return null;
+        return (U) aggregateOperator.aggregateValue;
     }
 
     @Override
@@ -199,6 +192,10 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         return (U)body;
     }
 
+    @Override
+    public RDD<T> unpersist(boolean blocking) {
+        return this;
+    }
 
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
