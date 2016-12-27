@@ -15,6 +15,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.Function1;
 import scala.reflect.ClassTag;
+import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 
@@ -47,7 +48,7 @@ public class TestChiSqSelector implements Serializable {
         //Assert.assertTrue(discretizedData!=null);
         final ChiSqSelectorModel transformer = selector.fit(discretizedData);
         System.out.println(transformer.formatVersion());
-        transformer.save(sc,"/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data");
+       // transformer.save(sc,"/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/transformer");
         ApexRDD<LabeledPoint> filteredData = (ApexRDD<LabeledPoint>) discretizedData.map(
                 new Function<LabeledPoint, LabeledPoint>() {
                     @Override
@@ -57,13 +58,14 @@ public class TestChiSqSelector implements Serializable {
                 }
         );
         System.out.println(transformer.formatVersion()+" ::"+ filteredData.hashCode());
-      /*  filteredData.foreach(new VoidFunction<LabeledPoint>() {
+
+        filteredData.foreach(new VoidFunction<LabeledPoint>() {
             @Override
             public void call(LabeledPoint labeledPoint) throws Exception {
                 System.out.println(labeledPoint.toString());
             }
         });
-*/
+
     }
     public static void main(String args[]){
         ApexContext sc  = new ApexContext(new ApexConf().setMaster("local").setAppName("ApexApp_ChiSquare"));

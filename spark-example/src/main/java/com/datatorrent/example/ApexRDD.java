@@ -16,6 +16,8 @@ import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.regression.LabeledPoint$;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.rdd.RDDOperationScope$;
@@ -373,12 +375,6 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     }
 
     @Override
-    public void foreach(Function1<T, BoxedUnit> f) {
-        super.foreach(f);
-
-    }
-
-    @Override
     public <U> U withScope(Function0<U> body) {
         return RDDOperationScope$.MODULE$.withScope(context,false,body);
     }
@@ -439,6 +435,35 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
         return array;
     }
+
+    @Override
+    public void foreach(Function1<T, BoxedUnit> f) {
+        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        ForeachOpeator foreach = cloneDag.addOperator(System.currentTimeMillis()+" ForEachOperator",new ForeachOpeator());
+        foreach.f=f;
+        cloneDag.addStream(System.currentTimeMillis()+" ForEachStream", currentOutputPort, foreach.input);
+        cloneDag.validate();
+        log.info("DAG successfully validated CountByValue");
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(10000);
+    }
+
+    public void foreach(VoidFunction<T> voidFunction) {
+        this.foreach(voidFunction);
+    }
+
+    /*public void foreach(Function<T, BoxedUnit> function) {
+    }*/
 
     public enum OperatorType {
         INPUT,

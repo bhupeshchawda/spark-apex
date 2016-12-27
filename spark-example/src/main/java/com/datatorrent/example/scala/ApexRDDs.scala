@@ -43,6 +43,9 @@ abstract class ApexRDDs[T: ClassTag](
     val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
     func
   }
+
+  override def foreach(f: (T) => Unit): Unit = super.foreach(f)
+
   def getFunc(f: (T, T) => T): (Iterator[T]) => Option[T] = {
     val reducePartition: Iterator[T] => Option[T] = iter => {
       if (iter.hasNext) {
