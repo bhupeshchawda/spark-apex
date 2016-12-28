@@ -1,5 +1,6 @@
-package com.datatorrent.example.algorithmtest;
+package com.datatorrent.example.algorithmspark;
 
+import com.datatorrent.example.apexscala.Test;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
@@ -20,7 +21,7 @@ public class LogisticRegressionTest {
         SparkContext sc= new SparkContext(new SparkConf().setMaster("local[2]").setAppName("Kmeans"));
         String path = "/home/anurag/spark-master/data/mllib/sample_libsvm_data.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        JavaRDD<LabeledPoint> data = new JavaRDD<>( MLUtils.loadLibSVMFile(sc, path),tag);
+        JavaRDD<LabeledPoint> data = new JavaRDD<>( MLUtils.loadLibSVMFile(sc,Test.data500()),tag);
 
         // Split initial RDD into two... [60% training data, 40% testing data].
         JavaRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);

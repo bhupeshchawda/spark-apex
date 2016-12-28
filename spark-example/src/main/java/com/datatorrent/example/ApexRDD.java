@@ -101,7 +101,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
-        SerializationUtils.clone(cloneDag);
         return temp;
     }
 
@@ -117,13 +116,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         m1.f= f;
-
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
-        SerializationUtils.clone(cloneDag);
         return temp;
     }
 
@@ -144,6 +141,12 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public RDD<T> persist(StorageLevel newLevel) {
         return this;
     }
+
+    @Override
+    public RDD<T> unpersist(boolean blocking) {
+        return this;
+    }
+
     public RDD<T>[] randomSplit(double[] weights){
         return randomSplit(weights, new Random().nextLong());
     }
@@ -158,20 +161,15 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     @Override
     public <U> RDD<U> mapPartitions(Function1<Iterator<T>, Iterator<U>> f, boolean preservesPartitioning, ClassTag<U> evidence$6) {
 
-        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput=getControlOutput(cloneDag);
-        MapPartitionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
-
-//        m1.f=getFunc(f);
-        m1.f = f;
-//        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
-        cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, m1.input);
-//        cloneDag.addStream(System.currentTimeMillis()+" Control Stream",controlOutput,m1.controlDone);
+        MapPartitionOperator mapPartitionOperator= cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
+        mapPartitionOperator.f = f;
+        cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, mapPartitionOperator.input);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag=cloneDag;
-
         return temp;
     }
 
@@ -212,33 +210,13 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         return reduce;
     }
 
-    public static Integer fileReader(String path){
-        BufferedReader br = null;
-        FileReader fr = null;
-        try{
-            fr = new FileReader(path);
-            br = new BufferedReader(fr);
-            String line;
-            br = new BufferedReader(new FileReader(path));
-            while((line = br.readLine())!=null){
-                return Integer.valueOf(line);
-            }
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }finally {
-            try{
-                if(br!=null)
-                    br.close();
-                if(fr!=null)
-                    fr.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
 
-
+//    @Override
+//    public T[] take(int num) {
+//        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
+//        DefaultOutputPortSerializable currentOutputPort =getCurrentOutputPort(cloneDag);
+//        TakeOperator takeOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Tak")
+//    }
 
     @Override
     public Iterator<T> compute(Partition arg0, TaskContext arg1) {
@@ -315,6 +293,21 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     }
 
     @Override
+    public RDD<T> sample(boolean withReplacement, double fraction, long seed) {
+
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        SampleOperator sampleOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new SampleOperator());
+        sampleOperator.fraction= fraction;
+//        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
+        cloneDag.addStream( System.currentTimeMillis()+ " SampleOperatorStream ", currentOutputPort, sampleOperator.input);
+        //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        ApexRDD<T> temp= (ApexRDD<T>) SerializationUtils.clone(this);
+        temp.dag=cloneDag;
+        return temp;
+    }
+
+    @Override
     public T[] collect() {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
@@ -340,7 +333,31 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         return array;
     }
-
+    public static Integer fileReader(String path){
+        BufferedReader br = null;
+        FileReader fr = null;
+        try{
+            fr = new FileReader(path);
+            br = new BufferedReader(fr);
+            String line;
+            br = new BufferedReader(new FileReader(path));
+            while((line = br.readLine())!=null){
+                return Integer.valueOf(line);
+            }
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }finally {
+            try{
+                if(br!=null)
+                    br.close();
+                if(fr!=null)
+                    fr.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
     public enum OperatorType {
         INPUT,
         PROCESS,

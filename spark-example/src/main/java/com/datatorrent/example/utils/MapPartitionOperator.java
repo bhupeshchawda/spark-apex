@@ -24,14 +24,23 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
         super.setup(context);
         id=context.getId();
     }
+    int count=0;
+    @Override
+    public void beginWindow(long windowId) {
+        count=0;
+    }
+
     Logger log = LoggerFactory.getLogger(MapPartitionOperator.class);
     public Function1<Iterator<T>, Iterator<U>> f;
     public DefaultOutputPortSerializable<U> output = new DefaultOutputPortSerializable();
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
+
         @Override
         public void process(T tuple) {
+            count++;
             try {
                 rddData.add(tuple);
+
             } catch ( Exception e){
                 log.info("Exception Occured Due to {} ",tuple.getClass());
                 e.printStackTrace();
@@ -42,10 +51,13 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
 
     @Override
     public void endWindow() {
-        Iterator<U> result = f.apply(scala.collection.JavaConversions.asScalaIterator(rddData.listIterator()));
-        while (result.hasNext()) {
-            output.emit(result.next());
+        if(count==0){
+            Iterator<U> result = f.apply(scala.collection.JavaConversions.asScalaIterator(rddData.listIterator()));
+            while (result.hasNext()) {
+                output.emit(result.next());
+            }
         }
+
     }
 
     @Override
