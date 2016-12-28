@@ -4,6 +4,8 @@ import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.apexscala.ApexPartition;
 import com.datatorrent.example.apexscala.ScalaApexRDD;
 import com.datatorrent.example.utils.*;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -24,32 +26,46 @@ import scala.Option;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     private static final long serialVersionUID = -3545979419189338756L;
-    private static PairRDDFunctions temp;
     public static ApexContext context;
+    public static ApexContext _sc;
+    private static PairRDDFunctions temp;
     public MyBaseOperator currentOperator;
     public OperatorType currentOperatorType;
     public DefaultOutputPortSerializable currentOutputPort;
     public DefaultOutputPortSerializable controlOutput;
     public  MyDAG dag;
-    public static ApexContext _sc;
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
-    protected Option<Partitioner> partitioner = (Option<Partitioner>) new ApexRDDOptionPartitioner();
     public Partition[] partitions_=getPartitions();
+    protected Option<Partitioner> partitioner = (Option<Partitioner>) new ApexRDDOptionPartitioner();
+    Logger log = LoggerFactory.getLogger(ApexRDD.class);
+
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
         this.dag=((ApexRDD<T>)rdd).dag;
 
     }
 
+    public ApexRDD(ApexContext ac) {
+        super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
+//        super.setSparkContext(context);
+        dag = new MyDAG();
+        context=ac;
+        _sc=ac;
+    }
+    public static Object readFromFile(String path) throws FileNotFoundException {
+        Kryo kryo = new Kryo();
+        Input input = new Input(new FileInputStream(path));
+        return kryo.readClassAndObject(input);
 
+    }
     @Override
     public Option<Partitioner> partitioner() {
         return (Option<Partitioner>) new ApexRDDOptionPartitioner();
@@ -60,15 +76,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         return context;
     }
 
-    public ApexRDD(ApexContext ac) {
-        super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
-//        super.setSparkContext(context);
-        dag = new MyDAG();
-        context=ac;
-        _sc=ac;
-    }
-
-    Logger log = LoggerFactory.getLogger(ApexRDD.class);
     public MyDAG getDag() {
         return this.dag;
     }
@@ -85,10 +92,12 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         return currentOperator.getOutputPort();
     }
+
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
         BaseInputOperator currentOperator= (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
+
     public <U> RDD<U> map(Function <T,U> f){
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
@@ -135,7 +144,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         temp.dag=cloneDag;
         return temp;
     }
-
 
     @Override
     public RDD<T> persist(StorageLevel newLevel) {
@@ -210,13 +218,41 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         return reduce;
     }
 
+    @Override
+    public T[] take(int num) {
+        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        TakeOperator takeOperator =cloneDag.addOperator(System.currentTimeMillis()+" TakeOperator",TakeOperator.class);
+        takeOperator.count=num;
+//        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+" TakeOperator Stream",currentOutputPort,takeOperator.input);
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/selectedData");
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", takeOperator.output, writer.input);
+        cloneDag.validate();
 
-//    @Override
-//    public T[] take(int num) {
-//        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
-//        DefaultOutputPortSerializable currentOutputPort =getCurrentOutputPort(cloneDag);
-//        TakeOperator takeOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Tak")
-//    }
+        log.info("DAG successfully validated");
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(3000);
+        ArrayList array= null;
+        try {
+            array = (ArrayList) readFromFile("/tmp/selectedData");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return (T[]) array.toArray();
+    }
 
     @Override
     public Iterator<T> compute(Partition arg0, TaskContext arg1) {
@@ -245,7 +281,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputDataCount");
+        writer.setAbsoluteFilePath("/tmp/count");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         cloneDag.validate();
 
@@ -262,7 +298,13 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
 
-        Integer count = fileReader("/tmp/outputDataCount");
+
+        Integer count=0;
+        try {
+            count = (Integer) readFromFile("/tmp/count");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         return count;
     }
 
@@ -315,6 +357,10 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
 //        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/collectedData");
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", collectOperator.output, writer.input);
         cloneDag.validate();
 
         log.info("DAG successfully validated");
@@ -329,34 +375,14 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
-        T[] array= (T[]) CollectOperator.t.toArray();
-
-        return array;
-    }
-    public static Integer fileReader(String path){
-        BufferedReader br = null;
-        FileReader fr = null;
-        try{
-            fr = new FileReader(path);
-            br = new BufferedReader(fr);
-            String line;
-            br = new BufferedReader(new FileReader(path));
-            while((line = br.readLine())!=null){
-                return Integer.valueOf(line);
-            }
-        } catch (java.io.IOException e) {
+        ArrayList array= null;
+        try {
+            array = (ArrayList) readFromFile("/tmp/collectedData");
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }finally {
-            try{
-                if(br!=null)
-                    br.close();
-                if(fr!=null)
-                    fr.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
-        return null;
+
+        return (T[]) array.toArray();
     }
     public enum OperatorType {
         INPUT,

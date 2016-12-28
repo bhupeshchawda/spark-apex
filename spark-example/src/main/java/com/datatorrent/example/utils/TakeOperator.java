@@ -1,5 +1,6 @@
 package com.datatorrent.example.utils;
 
+import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
@@ -13,14 +14,21 @@ import java.util.ArrayList;
 @DefaultSerializer(JavaSerializer.class)
 public class TakeOperator extends MyBaseOperator implements Serializable {
     public TakeOperator(){}
+
     public static ArrayList<Object> elements ;
     public static  int count;
 
+
     @Override
-    public void beginWindow(long windowId) {
+    public void setup(Context.OperatorContext context) {
         elements=  new ArrayList<>();
     }
 
+    @Override
+    public void beginWindow(long windowId) {
+
+    }
+    public DefaultOutputPortSerializable output= new DefaultOutputPortSerializable();
     public DefaultInputPortSerializable input =new DefaultInputPortSerializable() {
         @Override
         public void process(Object tuple) {
@@ -29,14 +37,20 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
             }
         }
     };
+
+    @Override
+    public void endWindow() {
+        output.emit(elements);
+    }
+
     @Override
     public DefaultInputPortSerializable getInputPort() {
-        return null;
+        return this.input;
     }
 
     @Override
     public DefaultOutputPortSerializable getOutputPort() {
-        return null;
+        return this.output;
     }
 
     @Override

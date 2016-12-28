@@ -15,7 +15,7 @@ import java.util.HashMap;
 /**
  * Created by anurag on 27/12/16.
  */
-public class DecisionTreeJava {
+public class DecisionTreeJavaApex{
     public static void main(String args[]) {
         ApexConf apexConf = new ApexConf().setMaster("local[2]").setAppName("JavaDecisionTreeClassificationExample");
         ApexContext ac = new ApexContext(apexConf);

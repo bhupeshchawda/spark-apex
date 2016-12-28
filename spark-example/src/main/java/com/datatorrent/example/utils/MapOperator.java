@@ -34,7 +34,7 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
     };
 
 
-    public DefaultOutputPortSerializable<Object> getOutputPort() {
+    public DefaultOutputPortSerializable getOutputPort() {
         return this.output;
     }
 
@@ -46,7 +46,7 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
         return null;
     }
 
-    public DefaultInputPortSerializable<T> getInputPort() {
+    public DefaultInputPortSerializable getInputPort() {
         return this.input;
     }
 
