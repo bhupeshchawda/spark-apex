@@ -2,12 +2,5 @@
 .idea/
 spark-example.iml
 /.idea/
-/src/main/java/com/datatorrent/example/algorithmspark/ScalaLogisticRegression.scala
-/src/main/java/com/datatorrent/example/algorithmspark/DecisionTreeTest.java
-/src/main/java/com/datatorrent/example/algorithmspark/LogisticRegressionTest.java
-/src/main/java/com/datatorrent/example/algorithmspark/AssociationMining.java
-/src/main/java/com/datatorrent/example/algorithmspark/DecisionTreeScala.scala
-/src/main/java/com/datatorrent/example/algorithmspark/LinearSupportVectorMachineTest.java
-/src/main/java/com/datatorrent/example/algorithmtest/LinearSupportVectorMachine.java
-/src/main/java/com/datatorrent/example/algorithmtest/DecisionTreeJava.java
+
 /src/main/resources/data/diabetes.txt

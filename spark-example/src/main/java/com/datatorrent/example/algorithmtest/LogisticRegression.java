@@ -24,16 +24,9 @@ public class LogisticRegression {
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
         ApexRDD<LabeledPoint> data = new ApexRDD<>( MLUtils.loadLibSVMFile(sc, Test.data100()),tag);
 
-        // Split initial RDD into two... [60% training data, 40% testing data].
         ApexRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
         ApexRDD<LabeledPoint> training = splits[0];
         ApexRDD<LabeledPoint> test = splits[1];
-//        long testCount =test.count();
-//
-//        System.out.println("Test count "+ testCount);
-//        System.out.println("Train cont "+trainCount);
-//        Assert.assertTrue(false);
-        // Run training algorithm to build the model.
         final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
                 .setNumClasses(10)
                 .run(training);
@@ -56,9 +49,6 @@ public class LogisticRegression {
         MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels);
         double accuracy = metrics.accuracy();
         System.out.println("Accuracy = " + accuracy);
-
-// Save and load model
-
     }
 
 }
