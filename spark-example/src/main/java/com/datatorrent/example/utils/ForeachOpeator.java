@@ -23,12 +23,14 @@ public class ForeachOpeator<T> extends MyBaseOperator<T> implements Serializable
         public void process(T tuple) {
             //print filtered data
             try {
-                log.info("tuple {}  class {} apply {} ",tuple, tuple.getClass(), String.valueOf((f.call(tuple))));
+                log.info("tuple {}  class {} apply {} ",tuple, tuple.getClass(), (f.call(tuple)));
+                output.emit(tuple);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     };
+    public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
     @Override
     public DefaultInputPortSerializable getInputPort() {
         return this.input;

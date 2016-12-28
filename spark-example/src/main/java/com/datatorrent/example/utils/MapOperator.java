@@ -60,7 +60,4 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
     public DefaultInputPortSerializable<Object> getInputPort() {
         return (DefaultInputPortSerializable<Object>) this.input;
     }
-
-    public boolean isInputPortOpen = true;
-    public boolean isOutputPortOpen = true;
 }

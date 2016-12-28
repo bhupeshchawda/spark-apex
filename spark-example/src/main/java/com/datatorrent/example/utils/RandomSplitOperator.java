@@ -46,9 +46,7 @@ public class RandomSplitOperator extends MyBaseOperator implements Serializable 
                 output.emit(tuple);
             }
             else if(index%a!=0 && flag){
-                output.emit(tuple); // these output ports works correctly when I connect it to console operator,
-                // but we don't want that, So where it should be connected so that it can return
-                // updated ApexRDD.
+                output.emit(tuple);
             }
 
         }

@@ -5,9 +5,7 @@ import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.mllib.feature.ChiSqSelector;
 import org.apache.spark.mllib.feature.ChiSqSelectorModel;
 import org.apache.spark.mllib.linalg.Vectors;
@@ -15,7 +13,6 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.Function1;
 import scala.reflect.ClassTag;
-import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 
@@ -45,7 +42,7 @@ public class TestChiSqSelector implements Serializable {
             }
         });
         System.out.println("before transformer");
-        //Assert.assertTrue(discretizedData!=null);
+
         final ChiSqSelectorModel transformer = selector.fit(discretizedData);
         System.out.println(transformer.formatVersion());
        // transformer.save(sc,"/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/transformer");
@@ -60,10 +57,11 @@ public class TestChiSqSelector implements Serializable {
         System.out.println(transformer.formatVersion()+" ::"+ filteredData.hashCode());
         //alternative way to print filtered data
         //printing in ForEachoperator
-        filteredData.foreach(new Function<LabeledPoint, BoxedUnit>() {
+        filteredData.foreach(new Function<LabeledPoint, LabeledPoint>() {
             @Override
-            public BoxedUnit call(LabeledPoint v1) throws Exception {
-                return this.call(v1);
+            public LabeledPoint call(LabeledPoint v1) throws Exception {
+                System.out.println(v1);
+              return v1;
             }
         });
         /*filteredData.foreach(new VoidFunction<LabeledPoint>() {

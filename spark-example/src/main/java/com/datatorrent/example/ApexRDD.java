@@ -1,12 +1,9 @@
 package com.datatorrent.example;
 
-import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.scala.ApexPartition;
 import com.datatorrent.example.scala.ApexRDDs;
-import com.datatorrent.example.scala.IteratorFunction;
 import com.datatorrent.example.utils.*;
-import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.commons.lang.SerializationUtils;
@@ -16,25 +13,26 @@ import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.regression.LabeledPoint$;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.rdd.RDDOperationScope$;
-import org.apache.spark.serializer.Serializer;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.*;
+import scala.Function0;
+import scala.Function1;
+import scala.Function2;
+import scala.Option;
 import scala.collection.Iterator;
 import scala.collection.Map;
 import scala.math.Ordering;
 import scala.reflect.ClassTag;
-import scala.runtime.BoxedUnit;
 
-import java.io.*;
-import java.lang.Boolean;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -73,28 +71,6 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public SparkContext sparkContext() {
         return context;
     }
-
-    public RDD<Tuple2> combineByKey(Function1 createCombiner, Function2 mergeValue, Function2 mergeCombiners) {
-        return combineByKey(createCombiner, mergeValue, mergeCombiners);
-    }
-
-    public RDD<Tuple2> combineByKey(Function1 createCombiner, Function2 mergeValue, Function2 mergeCombiners, int numPartitions) {
-        return combineByKey(createCombiner, mergeValue, mergeCombiners, numPartitions);
-    }
-
-    public RDD<Tuple2> combineByKey(Function1 createCombiner, Function2 mergeValue, Function2 mergeCombiners, Partitioner partitioner, boolean mapSideCombine, Serializer serializer) {
-        System.out.println("Combine By Key");
-        return null;
-    }
-
-    public boolean combineByKey$default$5() {
-        return false;
-    }
-
-    public Serializer combineByKey$default$6() {
-        return null;
-    }
-
 
     @Override
     public Option<Partitioner> partitioner() {
@@ -436,22 +412,17 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         return array;
     }
 
-    @Override
-    public void foreach(Function1<T, BoxedUnit> f) {
-
-    }
-
-    public void foreach(VoidFunction<T> voidFunction) {
-
-    }
-
-    public void foreach(Function<T, BoxedUnit> function) {
+    public void foreach(Function<LabeledPoint, LabeledPoint> function) {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         ForeachOpeator foreach = cloneDag.addOperator(System.currentTimeMillis()+" ForEachOperator",new ForeachOpeator());
 
         foreach.f= function;
         cloneDag.addStream(System.currentTimeMillis()+" ForEachStream", currentOutputPort, foreach.input);
+        SimpleFileWriteOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", new SimpleFileWriteOperator());
+        //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/transformer/filterData");
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", foreach.output, writer.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
         LocalMode lma = LocalMode.newInstance();
@@ -467,8 +438,6 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         lc.run(10000);
     }
 
-    /*public void foreach(Function<T, BoxedUnit> function) {
-    }*/
 
     public enum OperatorType {
         INPUT,

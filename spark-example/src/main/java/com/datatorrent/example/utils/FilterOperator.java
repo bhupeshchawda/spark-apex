@@ -51,8 +51,6 @@ public class FilterOperator extends MyBaseOperator implements Serializable
     public DefaultInputPortSerializable<Object> getInputPort(){
     return this.input;
   }
-  public boolean isInputPortOpen=true;
-  public boolean isOutputPortOpen=true;
 
 }
 

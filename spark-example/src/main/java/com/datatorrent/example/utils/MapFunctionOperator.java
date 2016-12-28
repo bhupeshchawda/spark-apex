@@ -26,9 +26,7 @@ public class MapFunctionOperator<T> extends MyBaseOperator implements Serializab
         @Override
         public void process(T tuple) {
             try {
-
                 output.emit((T) ff.call(tuple));
-
             }
             catch (Exception e){
                 log.info("Exception Occured Due to {} ",tuple);
@@ -55,7 +53,4 @@ public class MapFunctionOperator<T> extends MyBaseOperator implements Serializab
     public DefaultInputPortSerializable<Object> getInputPort() {
         return (DefaultInputPortSerializable<Object>) this.input;
     }
-
-    public boolean isInputPortOpen = true;
-    public boolean isOutputPortOpen = true;
 }
