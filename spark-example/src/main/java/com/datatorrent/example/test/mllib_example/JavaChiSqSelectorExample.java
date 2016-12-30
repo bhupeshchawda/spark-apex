@@ -33,12 +33,12 @@ import org.apache.spark.mllib.util.MLUtils;
 public class JavaChiSqSelectorExample {
   public static void main(String[] args) {
 
-    SparkConf conf = new SparkConf().setAppName("JavaChiSqSelectorExample");
+    SparkConf conf = new SparkConf().setAppName("JavaChiSqSelectorExample").setMaster("local[2]").set("spark.executor.memory","1g");
     JavaSparkContext jsc = new JavaSparkContext(conf);
 
     // $example on$
     JavaRDD<LabeledPoint> points = MLUtils.loadLibSVMFile(jsc.sc(),
-      "data/mllib/sample_libsvm_data.txt").toJavaRDD().cache();
+      "/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt").toJavaRDD();
 
     // Discretize data in 16 equal bins since ChiSqSelector requires categorical features
     // Although features are doubles, the ChiSqSelector treats each unique value as a category

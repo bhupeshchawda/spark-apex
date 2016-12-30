@@ -33,10 +33,10 @@ import org.apache.spark.SparkConf;
 
 public class JavaNaiveBayesExample {
   public static void main(String[] args) {
-    SparkConf sparkConf = new SparkConf().setAppName("JavaNaiveBayesExample");
+    SparkConf sparkConf = new SparkConf().setAppName("JavaNaiveBayesExample").setMaster("local[2]").set("spark.executor.memory","1g");
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
     // $example on$
-    String path = "data/mllib/sample_libsvm_data.txt";
+    String path = "/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
     JavaRDD<LabeledPoint> inputData = MLUtils.loadLibSVMFile(jsc.sc(), path).toJavaRDD();
     JavaRDD<LabeledPoint>[] tmp = inputData.randomSplit(new double[]{0.6, 0.4});
     JavaRDD<LabeledPoint> training = tmp[0]; // training set
