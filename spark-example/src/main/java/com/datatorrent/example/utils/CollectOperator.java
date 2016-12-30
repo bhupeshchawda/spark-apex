@@ -17,6 +17,7 @@ import java.util.ArrayList;
 public class CollectOperator<T> extends MyBaseOperator implements Serializable {
     Logger log = LoggerFactory.getLogger(CollectOperator.class);
     int count;
+    public CollectOperator(){}
     public  ArrayList<Object> dataList;
 
 
@@ -44,7 +45,7 @@ public class CollectOperator<T> extends MyBaseOperator implements Serializable {
     }
     public DefaultOutputPortSerializable output= new DefaultOutputPortSerializable();
 
-    public CollectOperator(){}
+
 
     @Override
     public DefaultInputPortSerializable getInputPort() {

@@ -60,6 +60,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         context=ac;
         _sc=ac;
     }
+    public ApexRDD createClone(MyDAG cloneDag){
+        ApexRDD apexRDDClone= (ApexRDD) SerializationUtils.clone(this);
+        apexRDDClone.dag=cloneDag;
+        return apexRDDClone;
+    }
     public static Object readFromFile(String path) throws FileNotFoundException {
         Kryo kryo = new Kryo();
         Input input = new Input(new FileInputStream(path));
@@ -108,9 +113,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream Function", currentOutputPort, m1.input);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag=cloneDag;
-        return temp;
+        return createClone(cloneDag);
     }
 
     @Override
@@ -128,9 +131,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag=cloneDag;
-        return temp;
+
+        return createClone(cloneDag);
     }
 
     @Override
@@ -140,9 +142,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
         filterOperator.f = context.clean(f,true);
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
-        ApexRDD<T> temp= (ApexRDD<T>) SerializationUtils.clone(this);
-        temp.dag=cloneDag;
-        return temp;
+
+        return createClone(cloneDag);
     }
 
     @Override
@@ -176,9 +177,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         mapPartitionOperator.f = f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, mapPartitionOperator.input);
        // cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        ApexRDD<U> temp= (ApexRDD<U>) SerializationUtils.clone(this);
-        temp.dag=cloneDag;
-        return temp;
+
+        return createClone(cloneDag);
     }
 
     @Override
@@ -244,13 +244,13 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
-        ArrayList array= null;
+
+        ArrayList<T> array= null;
         try {
-            array = (ArrayList) readFromFile("/tmp/selectedData");
+            array = (ArrayList<T>) readFromFile("/tmp/selectedData");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
         return (T[]) array.toArray();
     }
 
@@ -326,9 +326,9 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         randomSplitOperator2.count=count;
 //        cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
-        ApexRDD<T> temp1= (ApexRDD<T>) SerializationUtils.clone(this);
+        ApexRDD<T> temp1= (ApexRDD<T>)createClone(cloneDag);
         temp1.dag=cloneDag;
-        ApexRDD<T> temp2= (ApexRDD<T>) SerializationUtils.clone(this);
+        ApexRDD<T> temp2= (ApexRDD<T>)createClone(cloneDag);
         temp2.dag=cloneDag2;
         ApexRDD[] temp=new ApexRDD[]{temp1, temp2};
         return temp;

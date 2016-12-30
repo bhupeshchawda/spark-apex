@@ -51,7 +51,7 @@ public class FileWriterOperator extends BaseOperator implements Serializable
         @Override
         public void process(Object tuple)
         {
-            System.out.println("FileWriter.class"+" We are in filewriter inputport");
+
             try {
                 writeToFile(absoluteFilePath,tuple);
             } catch (FileNotFoundException e) {

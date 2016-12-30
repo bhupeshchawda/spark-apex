@@ -1,5 +1,9 @@
 package com.datatorrent.example.apexscala
 
+
+import java.util
+
+import com.datatorrent.example.ApexRDD
 import com.datatorrent.example.utils.MyDAG
 import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
@@ -67,11 +71,15 @@ import scala.reflect.ClassTag
   override def compute(split: Partition, context: TaskContext): Iterator[T] = ???
 
   override protected def getPartitions: Array[Partition] = ???
+
 }
 object ScalaApexRDD extends {
   implicit  def rddToPairRDDFunctions[K,V](rdd:ScalaApexRDD[(K,V)])
                                          ( implicit kt: ClassTag[K], vt: ClassTag[V], ord: Ordering[K] = null): PairApexRDDFunction[K, V]={
     println("We are here")
     new PairApexRDDFunction[K,V](rdd)
+  }
+   def toArray[T:ClassTag,U:ClassTag](o:util.ArrayList[U],apexRDD:ApexRDD[T]) =Array[T]{
+      o.asInstanceOf[T]
   }
 }

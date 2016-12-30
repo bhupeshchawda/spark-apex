@@ -17,7 +17,7 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
 
     public static ArrayList<Object> elements ;
     public static  int count;
-
+    public int isWindowEmpty;
 
     @Override
     public void setup(Context.OperatorContext context) {
@@ -26,21 +26,25 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
 
     @Override
     public void beginWindow(long windowId) {
-
+        isWindowEmpty=0;
     }
     public DefaultOutputPortSerializable output= new DefaultOutputPortSerializable();
     public DefaultInputPortSerializable input =new DefaultInputPortSerializable() {
         @Override
         public void process(Object tuple) {
+            isWindowEmpty++;
             if(count!=0){
                 elements.add(tuple);
+                count--;
             }
         }
     };
 
     @Override
     public void endWindow() {
-        output.emit(elements);
+        if(isWindowEmpty==0){
+            output.emit(elements);
+        }
     }
 
     @Override
