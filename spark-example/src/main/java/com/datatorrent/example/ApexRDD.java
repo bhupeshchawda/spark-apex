@@ -13,7 +13,6 @@ import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
 import org.junit.Assert;
@@ -36,11 +35,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     private static final long serialVersionUID = -3545979419189338756L;
     public static ApexContext context;
     public static ApexContext _sc;
-    private static PairRDDFunctions temp;
-    public MyBaseOperator currentOperator;
-    public OperatorType currentOperatorType;
-    public DefaultOutputPortSerializable currentOutputPort;
-    public DefaultOutputPortSerializable controlOutput;
     public  MyDAG dag;
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     public Partition[] partitions_=getPartitions();
@@ -92,10 +86,9 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
             MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
             return currentOperator.getOutputPort();
         } catch (Exception e) {
-            System.out.println("Operator "+cloneDag.getLastOperatorName()+" Doesn't exist in the dag");
-            e.printStackTrace();
+            log.error("Operator {} doesn't exist in the dag",cloneDag.getLastOperatorName());
+            throw new RuntimeException(e);
         }
-        return currentOperator.getOutputPort();
     }
 
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
@@ -172,7 +165,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        controlOutput=getControlOutput(cloneDag);
         MapPartitionOperator mapPartitionOperator= cloneDag.addOperator(System.currentTimeMillis()+ " MapPartition " , new MapPartitionOperator());
         mapPartitionOperator.f = f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapPartitionStream ", currentOutputPort, mapPartitionOperator.input);
@@ -185,7 +177,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public T reduce(Function2<T, T, T> f) {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        controlOutput= getControlOutput(cloneDag);
+        DefaultOutputPortSerializable controlOutput = getControlOutput(cloneDag);
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
        // cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         reduceOperator.f = context.clean(f,true);
@@ -274,7 +266,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
 
         DefaultOutputPortSerializable currentCountOutputPort = getCurrentOutputPort(cloneDag);
-        controlOutput= getControlOutput(cloneDag);
+        DefaultOutputPortSerializable controlOutput = getControlOutput(cloneDag);
         CountOperator countOperator = cloneDag.addOperator(System.currentTimeMillis()+ " CountOperator " , CountOperator.class);
        // cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Count Input Stream", currentCountOutputPort, countOperator.input);
