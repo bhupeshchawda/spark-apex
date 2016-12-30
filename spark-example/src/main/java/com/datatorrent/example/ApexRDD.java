@@ -7,10 +7,7 @@ import com.datatorrent.example.utils.*;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.apache.commons.lang.SerializationUtils;
-import org.apache.commons.math.random.RandomGenerator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.*;
 import org.apache.spark.api.java.function.Function;
@@ -197,6 +194,43 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     }
 
     @Override
+    public T reduce(Function2<T, T, T> f) {
+        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        controlOutput= getControlOutput(cloneDag);
+        ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
+        cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        reduceOperator.f = f;
+
+        Assert.assertTrue(currentOutputPort != null);
+        cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
+        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
+
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("/tmp/outputData");
+
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
+
+        cloneDag.validate();
+        log.debug("DAG successfully validated");
+
+        LocalMode lma = LocalMode.newInstance();
+        Configuration conf = new Configuration(false);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+        try {
+            lma.prepareDAG(app, conf);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception in prepareDAG", e);
+        }
+        LocalMode.Controller lc = lma.getController();
+        lc.run(3000);
+        Integer reduce = fileReader("/tmp/outputData");
+        return (T) reduce;
+    }
+
+    @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
@@ -236,51 +270,14 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         temp.dag=cloneDag;
         return temp;
     }
-
     @Override
     public RDD<T> persist(StorageLevel newLevel) {
         return this;
     }
+
+
     public RDD<T>[] randomSplit(double[] weights){
         return randomSplit(weights, new Random().nextLong());
-    }
-
-
-    @Override
-    public T reduce(Function2<T, T, T> f) {
-        MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
-        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        controlOutput= getControlOutput(cloneDag);
-        ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
-        cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        reduceOperator.f = f;
-
-        Assert.assertTrue(currentOutputPort != null);
-        cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
-        cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
-
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
-        cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputData");
-
-        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
-
-        cloneDag.validate();
-        log.debug("DAG successfully validated");
-
-        LocalMode lma = LocalMode.newInstance();
-        Configuration conf = new Configuration(false);
-        GenericApplication app = new GenericApplication();
-        app.setDag(cloneDag);
-        try {
-            lma.prepareDAG(app, conf);
-        } catch (Exception e) {
-            throw new RuntimeException("Exception in prepareDAG", e);
-        }
-        LocalMode.Controller lc = lma.getController();
-        lc.run(3000);
-        Integer reduce = fileReader("/tmp/outputData");
-        return (T) reduce;
     }
 
     public static Integer fileReader(String path){
@@ -363,6 +360,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     @Override
     public ApexRDD<T>[] randomSplit(double[] weights, long seed){
+
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
