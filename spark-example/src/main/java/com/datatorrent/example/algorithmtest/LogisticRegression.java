@@ -25,6 +25,13 @@ public class LogisticRegression {
         ApexRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
         ApexRDD<LabeledPoint> training = splits[0];
         ApexRDD<LabeledPoint> test = splits[1];
+        Long trainCount=training.count();
+//        System.out.println("Train COUNT "+trainCount);
+//        Long testCount=test.count();
+//
+//        System.out.println("Train COUNT "+trainCount);
+//        System.out.println("Test COUNT "+testCount);
+//        Assert.assertTrue(false);
         final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
                 .setNumClasses(10)
                 .run(training);

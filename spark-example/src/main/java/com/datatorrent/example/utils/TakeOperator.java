@@ -43,7 +43,7 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
     @Override
     public void endWindow() {
         if(isWindowEmpty==0){
-            output.emit(elements);
+            output.emit(elements.toArray());
         }
     }
 

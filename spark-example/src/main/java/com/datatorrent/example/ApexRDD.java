@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Random;
 
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
@@ -212,6 +213,9 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     @Override
     public T[] take(int num) {
+        if(num==1){
+
+        }
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         TakeOperator takeOperator =cloneDag.addOperator(System.currentTimeMillis()+" TakeOperator",TakeOperator.class);
@@ -237,13 +241,14 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
 
-        ArrayList<T> array= null;
+        ArrayList array= null;
         try {
-            array = (ArrayList<T>) readFromFile("/tmp/selectedData");
+            T [] arr= (T[]) readFromFile("/tmp/selectedData");
+            return arr;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        return (T[]) array.toArray();
+        return null;
     }
 
     @Override
@@ -307,6 +312,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
+        RandomSplitOperator.bitset=new BitSet((int) count);
         randomSplitOperator.weights=weights;
         randomSplitOperator.count=count;
 //        cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
@@ -316,6 +322,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         randomSplitOperator2.weights=weights;
         randomSplitOperator2.flag=true;
         randomSplitOperator2.count=count;
+
 //        cloneDag2.setInputPortAttribute(randomSplitOperator2.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag2.addStream(System.currentTimeMillis()+" RandomSplit_Input Stream",currentSplitOutputPort2, randomSplitOperator2.input);
         ApexRDD<T> temp1= (ApexRDD<T>)createClone(cloneDag);

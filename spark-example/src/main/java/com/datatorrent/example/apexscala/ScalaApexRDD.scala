@@ -1,8 +1,6 @@
 package com.datatorrent.example.apexscala
 
 
-import java.util
-
 import com.datatorrent.example.ApexRDD
 import com.datatorrent.example.utils.MyDAG
 import org.apache.spark._
@@ -28,19 +26,6 @@ import scala.reflect.ClassTag
     val func = (context: TaskContext, index: Int, iter: Iterator[T]) => f(iter)
     func
   }
-
-
-//  def getFunc(f: (T, T) => T): (Iterator[T]) => Option[T] = {
-//    val reducePartition: Iterator[T] => Option[T] = iter => {
-//      if (iter.hasNext) {
-//        Some(iter.reduceLeft(f))
-//      } else {
-//        None
-//      }
-//    }
-//    reducePartition
-//  }
-
   override def treeAggregate[U: ClassTag](zeroValue: U)(
     seqOp: (U, T) => U,
     combOp: (U, U) => U,
@@ -79,7 +64,8 @@ object ScalaApexRDD extends {
     println("We are here")
     new PairApexRDDFunction[K,V](rdd)
   }
-   def toArray[T:ClassTag,U:ClassTag](o:util.ArrayList[U],apexRDD:ApexRDD[T]) =Array[T]{
-      o.asInstanceOf[T]
+   def toArray[T:ClassTag](o:Array[Integer], apexRDD:ApexRDD[T]): Array[Any] = {
+     o.map(o=>o.toInt)
   }
+
 }
