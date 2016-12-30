@@ -410,31 +410,6 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         return array;
     }
 
-
-
-    public class PairApexRDDFunctions<K,V> extends ApexRDD {
-        public PairApexRDDFunctions(RDD<T> rdd, ClassTag<T> classTag) {
-            super(rdd, classTag);
-        }
-        public <C> ApexRDD<Tuple2<K, C>> combineByKey(Function1<V, C> createCombiner, Function2<C, V, C> mergeValue,
-                                                  Function2<C, C, C> mergeCombiners, Partitioner partitioner,
-                                                  boolean mapSideCombine, Serializer serializer) {
-//            ApexRDD<Tuple2<K,C>> temp =(ApexRDD<Tuple2<K,C>> )super.combineByKey(createCombiner, mergeValue, mergeCombiners, partitioner, mapSideCombine, serializer);
-
-            log.debug("combineByKey is called");
-//            junit.framework.Assert.assertTrue(false);
-            return null;
-        }
-
-        public <C> ApexRDD<Tuple2<K, C>> combineByKey(Function1<V, C> createCombiner,
-                                                  Function2<C, V, C> mergeValue, Function2<C, C, C> mergeCombiners,
-                                                  int numPartitions) {
-            log.debug("combineByKey is called +1");
-//            ApexRDD<Tuple2<K,C>>  temp=( ApexRDD<Tuple2<K,C>> ) super.combineByKey(createCombiner, mergeValue, mergeCombiners, numPartitions);
-            return null;
-        }
-    }
-
     public enum OperatorType {
         INPUT,
         PROCESS,
