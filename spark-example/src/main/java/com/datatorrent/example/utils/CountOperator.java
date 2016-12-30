@@ -12,6 +12,7 @@ public class CountOperator<T> extends MyBaseOperator implements Serializable
 
     public CountOperator() {
     }
+    int temp;
 
     public DefaultOutputPortSerializable<Integer> getCountOutputPort() {
         return null;
@@ -20,16 +21,23 @@ public class CountOperator<T> extends MyBaseOperator implements Serializable
     @Override
     public void beginWindow(long windowId)
     {
-        if (done) {
+        temp=0;
+    }
+
+    @Override
+    public void endWindow() {
+        if(temp==0){
             output.emit(count);
         }
     }
-    Integer count =0;
+
+    public static long count =0;
     public final  DefaultInputPortSerializable<T>   input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple)
         {
             count++;
+            temp++;
         }
     };
 

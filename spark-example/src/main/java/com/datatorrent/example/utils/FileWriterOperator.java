@@ -10,9 +10,8 @@ import org.apache.hadoop.fs.FileSystem;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.Serializable;
 
-public class FileWriterOperator extends BaseOperator implements Serializable
+public class FileWriterOperator extends BaseOperator
 {
     private BufferedWriter bw;
     private String absoluteFilePath;
@@ -23,10 +22,11 @@ public class FileWriterOperator extends BaseOperator implements Serializable
     public FileWriterOperator()
     {
     }
-    public static void writeToFile(String path,Object o) throws FileNotFoundException {
+    public synchronized  static void writeToFile(String path,Object o) throws FileNotFoundException {
         Kryo kryo = new Kryo();
         Output output = new Output(new FileOutputStream(path));
         kryo.writeClassAndObject(output, o);
+        output.flush();
         output.close();
     }
     @Override
@@ -37,12 +37,12 @@ public class FileWriterOperator extends BaseOperator implements Serializable
     @Override
     public void setup(OperatorContext context)
     {
-        try {
-            kryo = new Kryo();
-            output = new Output(new FileOutputStream(absoluteFilePath));
-        } catch (Exception e) {
-            throw new RuntimeException();
-        }
+//        try {
+//            kryo = new Kryo();
+//            output = new Output(new FileOutputStream(absoluteFilePath));
+//        } catch (Exception e) {
+//            throw new RuntimeException();
+//        }
     }
 //    Logger log = LoggerFactory.getLogger(FileWriterOperator.class);
 
@@ -53,6 +53,7 @@ public class FileWriterOperator extends BaseOperator implements Serializable
         {
 
             try {
+
                 writeToFile(absoluteFilePath,tuple);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

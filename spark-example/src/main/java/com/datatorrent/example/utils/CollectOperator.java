@@ -18,7 +18,7 @@ public class CollectOperator<T> extends MyBaseOperator implements Serializable {
     Logger log = LoggerFactory.getLogger(CollectOperator.class);
     int count;
     public CollectOperator(){}
-    public  ArrayList<Object> dataList;
+    public static ArrayList<Object> dataList;
 
 
     @Override
@@ -29,7 +29,7 @@ public class CollectOperator<T> extends MyBaseOperator implements Serializable {
     @Override
     public void endWindow() {
         if(count==0)
-            output.emit(dataList);
+            output.emit(dataList.toArray());
     }
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override

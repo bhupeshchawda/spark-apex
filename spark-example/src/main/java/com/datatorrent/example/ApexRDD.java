@@ -278,7 +278,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/count");
+        writer.setAbsoluteFilePath("/tmp/count.ser");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         cloneDag.validate();
 
@@ -296,9 +296,9 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         lc.run(3000);
 
 
-        Integer count=0;
+        Long count=0L;
         try {
-            count = (Integer) readFromFile("/tmp/count");
+            count = (Long) readFromFile("/tmp/count.ser");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -374,14 +374,14 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(3000);
-        ArrayList array= null;
-        try {
-            array = (ArrayList) readFromFile("/tmp/collectedData");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+//        Object [] array = new Object[0];
+//        try {
+//            array = (Object[]) readFromFile("/tmp/collectedData");
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
 
-        return (T[]) array.toArray();
+        return (T[]) collectOperator.dataList.toArray();
     }
     public enum OperatorType {
         INPUT,
