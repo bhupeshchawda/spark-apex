@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.BitSet;
-import java.util.Random;
 
 /**
  * Created by harsh on 8/12/16.
@@ -19,60 +18,47 @@ public class RandomSplitOperator<T> extends MyBaseOperator implements Serializab
 
     public double[] weights;
 
-    public  boolean flag;
-    public static BitSet bitset;
+    public  boolean flag=false;
+    public static BitSet bitSet;
     public int limit;
-    public long count;
-    private int index;
+    public int a,b;
+    public long count= 1;
 
 
     @Override
     public void setup(Context.OperatorContext context) {
-        index=0;
+        super.setup(context);
         limit= (int) (count*weights[0]);
 
     }
-    int temp;
-    @Override
-    public void beginWindow(long windowId) {
-        temp=0;
-
-    }
-
-    @Override
-    public void endWindow() {
-        if(temp==0){
-        }
-    }
 
     public boolean done= false;
+    private int index=0;
     Logger log = LoggerFactory.getLogger(RandomSplitOperator.class);
-    public int getRandom(){
-        Random random =new Random();
-        return random.nextInt((int) (count+1));
-    }
+
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-            temp++;
-            if(!flag && index<limit){
-                int randomIndex=getRandom();
-                while(bitset.get(randomIndex))
-                    randomIndex=getRandom();
-                bitset.set(randomIndex);
+
+            if( Math.random()<=weights[0] && index<limit && !flag){
+                bitSet.set(index);
                 output.emit(tuple);
-
             }
+            else if( flag  && !bitSet.get(index)){
 
-            else if(flag && !bitset.get(index)){
                 output.emit(tuple);
             }
             index++;
+
         }
     };
 
 
 
+    @Override
+    public void beginWindow(long windowId) {
+        super.beginWindow(windowId);
+    }
 
 
     public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
