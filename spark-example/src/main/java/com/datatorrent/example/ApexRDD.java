@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.BitSet;
 import java.util.Random;
 
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
@@ -263,6 +264,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         lc.run(3000);
 
         Integer count = fileReader("/tmp/outputDataCount");
+        if(count==null)
+            return 0L;
         return count;
     }
 
@@ -273,6 +276,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         MyDAG cloneDag2= (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         RandomSplitOperator randomSplitOperator = cloneDag.addOperator(System.currentTimeMillis()+" RandomSplitter", RandomSplitOperator.class);
+        RandomSplitOperator.bitset=new BitSet((int) count);
         randomSplitOperator.weights=weights;
         randomSplitOperator.count=count;
 //        cloneDag.setInputPortAttribute(randomSplitOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());

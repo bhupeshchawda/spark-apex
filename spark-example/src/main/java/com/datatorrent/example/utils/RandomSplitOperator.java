@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.BitSet;
+import java.util.Random;
 
 /**
  * Created by harsh on 8/12/16.
@@ -17,47 +19,60 @@ public class RandomSplitOperator<T> extends MyBaseOperator implements Serializab
 
     public double[] weights;
 
-    public  boolean flag=false;
-
+    public  boolean flag;
+    public static BitSet bitset;
     public int limit;
-    public int a,b;
-    public long count= 1;
+    public long count;
+    private int index;
 
 
     @Override
     public void setup(Context.OperatorContext context) {
-        super.setup(context);
-            weights[0]=weights[0]*count;
-            weights[1]=weights[1]*count;
-            a= (int) Math.ceil(count/weights[0]);
-            b= (int) Math.ceil(count/weights[1]);
+        index=0;
+        limit= (int) (count*weights[0]);
+
+    }
+    int temp;
+    @Override
+    public void beginWindow(long windowId) {
+        temp=0;
 
     }
 
-    public boolean done= false;
-    private int index=0;
-    Logger log = LoggerFactory.getLogger(RandomSplitOperator.class);
+    @Override
+    public void endWindow() {
+        if(temp==0){
+        }
+    }
 
+    public boolean done= false;
+    Logger log = LoggerFactory.getLogger(RandomSplitOperator.class);
+    public int getRandom(){
+        Random random =new Random();
+        return random.nextInt((int) (count+1));
+    }
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
-            index++;
-            if(index%a==0 && !flag){
+            temp++;
+            if(!flag && index<limit){
+                int randomIndex=getRandom();
+                while(bitset.get(randomIndex))
+                    randomIndex=getRandom();
+                bitset.set(randomIndex);
                 output.emit(tuple);
-            }
-            else if(index%a!=0 && flag){
-                output.emit(tuple);
+
             }
 
+            else if(flag && !bitset.get(index)){
+                output.emit(tuple);
+            }
+            index++;
         }
     };
 
 
 
-    @Override
-    public void beginWindow(long windowId) {
-        super.beginWindow(windowId);
-    }
 
 
     public DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
