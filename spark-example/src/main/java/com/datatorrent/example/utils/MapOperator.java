@@ -27,7 +27,7 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
                 try {
                     output.emit( f.apply(tuple));
                 } catch (Exception e){
-                    log.info("Exception Occured Due to {} ",tuple);
+                    log.debug("Exception Occured Due to {} ",tuple);
 
                 }
         }

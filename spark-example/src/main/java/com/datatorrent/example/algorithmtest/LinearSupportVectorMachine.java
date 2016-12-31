@@ -46,7 +46,7 @@ public class LinearSupportVectorMachine{
         );
         // Save and load model
         model.save(sc, "target/tmp/apexSVMWithSGDModel");
-//        SVMModel sameModel = SVMModel.load(sc, "target/tmp/apexSVMWithSGDModel");
+
 // Get evaluation metrics.
 //        BinaryClassificationMetrics metrics =
 //                new BinaryClassificationMetrics(scoreAndLabels);

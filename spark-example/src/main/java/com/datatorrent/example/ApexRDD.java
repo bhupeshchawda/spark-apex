@@ -77,7 +77,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
     public DefaultOutputPortSerializable getCurrentOutputPort(MyDAG cloneDag){
 
         try {
-            log.info("Last operator in the Dag {}",dag.getLastOperatorName());
+            log.debug("Last operator in the Dag {}",dag.getLastOperatorName());
             MyBaseOperator currentOperator = (MyBaseOperator) cloneDag.getOperatorMeta(cloneDag.getLastOperatorName()).getOperator();
             return currentOperator.getOutputPort();
         } catch (Exception e) {
@@ -194,7 +194,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
         cloneDag.validate();
-        log.info("DAG successfully validated");
+        log.debug("DAG successfully validated");
 
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
@@ -250,7 +250,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         cloneDag.validate();
 
-        log.info("DAG successfully validated");
+        log.debug("DAG successfully validated");
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
         GenericApplication app = new GenericApplication();
@@ -321,7 +321,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
         cloneDag.validate();
 
-        log.info("DAG successfully validated");
+        log.debug("DAG successfully validated");
         LocalMode lma = LocalMode.newInstance();
         Configuration conf = new Configuration(false);
         GenericApplication app = new GenericApplication();

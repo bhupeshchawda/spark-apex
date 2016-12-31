@@ -19,7 +19,7 @@ import scala.Tuple2;
 public class LinearSupportVectorMachineTest {
         public static void main(String[] args){
             SparkContext sc= new SparkContext(new SparkConf().setMaster("local[2]").setAppName("Linear SVM"));
-            String path = Test.data100();
+            String path = Test.diabetes();
             JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc, path).toJavaRDD();
 
 // Split initial RDD into two... [60% training data, 40% testing data].

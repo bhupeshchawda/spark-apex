@@ -30,7 +30,7 @@ public class PairApexRDDFunctions<K,V> extends PairRDDFunctions<K,V> {
                                               boolean mapSideCombine, Serializer serializer) {
         ApexRDD<Tuple2<K,C>> temp =(ApexRDD<Tuple2<K,C>> )super.combineByKey(createCombiner, mergeValue, mergeCombiners, partitioner, mapSideCombine, serializer);
         temp.dag=apexRDD.dag;
-        log.info("combineByKey is called");
+        log.debug("combineByKey is called");
         Assert.assertTrue(false);
         return temp;
     }

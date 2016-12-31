@@ -42,7 +42,7 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
                 rddData.add(tuple);
 
             } catch ( Exception e){
-                log.info("Exception Occured Due to {} ",tuple.getClass());
+                log.debug("Exception Occured Due to {} ",tuple.getClass());
                 e.printStackTrace();
 //                output.emit(tuple);
             }
