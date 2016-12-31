@@ -58,12 +58,7 @@ import scala.reflect.ClassTag
   override protected def getPartitions: Array[Partition] = ???
 
 }
-object ScalaApexRDD extends {
-  implicit  def rddToPairRDDFunctions[K,V](rdd:ScalaApexRDD[(K,V)])
-                                         ( implicit kt: ClassTag[K], vt: ClassTag[V], ord: Ordering[K] = null): PairApexRDDFunction[K, V]={
-    println("We are here")
-    new PairApexRDDFunction[K,V](rdd)
-  }
+object ScalaApexRDD{
    def toArray[T:ClassTag](o:Array[Integer], apexRDD:ApexRDD[T]): Array[Any] = {
      o.map(o=>o.toInt)
   }
