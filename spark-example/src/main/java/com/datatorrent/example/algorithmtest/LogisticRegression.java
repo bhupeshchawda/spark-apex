@@ -8,7 +8,6 @@ import com.datatorrent.example.apexscala.Test;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
-import org.apache.spark.mllib.evaluation.MulticlassMetrics;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.Tuple2;
@@ -41,14 +40,14 @@ public class LogisticRegression {
                 }
         );
 
-        model.save(sc, "/home/anurag/spark-apex/spark-example/target/tmp/apexLogisticRegressionWithLBFGSModel");
-        LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
-                "/home/anurag/spark-apex/spark-example/target/tmp/apexLogisticRegressionWithLBFGSModel");
-        // Get evaluation metrics.
-
-        MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels);
-        double accuracy = metrics.accuracy();
-        System.out.println("Accuracy = " + accuracy);
+        model.save(sc, "target/tmp/apexLogisticRegressionWithLBFGSModel");
+//        LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
+//                "/home/anurag/spark-apex/spark-example/target/tmp/apexLogisticRegressionWithLBFGSModel");
+//        // Get evaluation metrics.
+//
+//        MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels);
+//        double accuracy = metrics.accuracy();
+//        System.out.println("Accuracy = " + accuracy);
     }
 
 }

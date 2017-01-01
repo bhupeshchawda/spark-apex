@@ -27,7 +27,6 @@ public class DecisionTreeJava {
         ApexRDD<LabeledPoint>[] splits = data.randomSplit(new double[]{0.7, 0.3},11L);
         ApexRDD<LabeledPoint> trainingData = splits[0];
         ApexRDD<LabeledPoint> testData = splits[1];
-
 // Set parameters.
 //  Empty categoricalFeaturesInfo indicates all features are continuous.
         Integer numClasses = 2;

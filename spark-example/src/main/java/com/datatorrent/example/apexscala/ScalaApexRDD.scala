@@ -5,8 +5,8 @@ import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-
 /**
   * Created by anurag on 16/12/16.
   */
@@ -37,6 +37,17 @@ import scala.reflect.ClassTag
 //    reducePartition
 //  }
 
+
+
+//  def toArray(array: Array[Object]): Array[T] ={
+//  val data= new Array[T](array.length)
+//  val count=0
+//  for ( a <- array.toIterator){
+//    data(count)=a.asInstanceOf[T]
+//  }
+//  data
+//
+//}
   override def treeAggregate[U: ClassTag](zeroValue: U)(
     seqOp: (U, T) => U,
     combOp: (U, U) => U,
@@ -63,11 +74,39 @@ import scala.reflect.ClassTag
 //    }
     partiallyAggregated.reduce(cleanCombOp)
   }
+
+  override def take(num: Int): Array[T] = {
+    println(num)
+    var a =new ArrayBuffer[T](num)
+    if(num==1){
+
+      a+=this.collect()(0)
+      println(a)
+      return a.toArray
+    }
+    var count=0;
+//    for( o <-this.collect()){
+//      if(count>=num)
+//        return a.toArray
+//      else{
+//        a+=o
+//        count=count+1
+//      }
+//    }
+   a.toArray
+
+  }
+
+  override def keyBy[K](f: (T) => K): RDD[(K, T)] ={
+    this.map(x => (f(x), x))
+  }
+
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[T] = ???
 
   override protected def getPartitions: Array[Partition] = ???
 }
 object ScalaApexRDD extends {
+
 
 }

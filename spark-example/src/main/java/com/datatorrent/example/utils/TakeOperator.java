@@ -1,5 +1,6 @@
 package com.datatorrent.example.utils;
 
+import com.datatorrent.api.Context;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
@@ -17,7 +18,7 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
     public static  int count;
 
     @Override
-    public void beginWindow(long windowId) {
+    public void setup(Context.OperatorContext context) {
         elements=  new ArrayList<>();
     }
 
@@ -26,6 +27,7 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
         public void process(Object tuple) {
             if(count!=0){
                 elements.add(tuple);
+                count--;
             }
         }
     };

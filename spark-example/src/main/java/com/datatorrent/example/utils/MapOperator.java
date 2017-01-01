@@ -18,11 +18,11 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
         super.setup(context);
     }
     Logger log = LoggerFactory.getLogger(MapOperator.class);
-    public Function1 f;
-    public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable<>();
-    public DefaultInputPortSerializable input = new DefaultInputPortSerializable() {
+    public Function1<T,U> f;
+    public DefaultOutputPortSerializable<U> output = new DefaultOutputPortSerializable<>();
+    public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
-        public void process(Object tuple) {
+        public void process(T tuple) {
 
                 try {
                     output.emit( f.apply(tuple));
@@ -34,7 +34,7 @@ public class MapOperator<T,U> extends MyBaseOperator implements Serializable {
     };
 
 
-    public DefaultOutputPortSerializable<Object> getOutputPort() {
+    public DefaultOutputPortSerializable<U> getOutputPort() {
         return this.output;
     }
 
