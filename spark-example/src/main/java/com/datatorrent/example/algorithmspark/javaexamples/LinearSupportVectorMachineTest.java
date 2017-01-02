@@ -1,10 +1,10 @@
-package com.datatorrent.example.algorithmspark;
+package com.datatorrent.example.algorithmspark.javaexamples;
 
 /**
  * Created by anurag on 27/12/16.
  */
 
-import com.datatorrent.example.apexscala.Test;
+import com.datatorrent.example.apexscala.AlgorithmTest;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
@@ -19,7 +19,7 @@ import scala.Tuple2;
 public class LinearSupportVectorMachineTest {
         public static void main(String[] args){
             SparkContext sc= new SparkContext(new SparkConf().setMaster("local[2]").setAppName("Linear SVM"));
-            String path = Test.diabetes();
+            String path = AlgorithmTest.diabetes();
             JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc, path).toJavaRDD();
 
 // Split initial RDD into two... [60% training data, 40% testing data].

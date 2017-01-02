@@ -1,4 +1,4 @@
-package com.datatorrent.example.algorithmspark;
+package com.datatorrent.example.algorithmspark.javaexamples;
 
 /**
  * Created by anurag on 27/12/16.

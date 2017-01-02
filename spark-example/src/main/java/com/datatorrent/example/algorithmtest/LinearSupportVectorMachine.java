@@ -7,7 +7,7 @@ package com.datatorrent.example.algorithmtest;
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import com.datatorrent.example.apexscala.Test;
+import com.datatorrent.example.apexscala.AlgorithmTest;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.classification.SVMWithSGD;
@@ -19,7 +19,7 @@ import scala.reflect.ClassTag;
 public class LinearSupportVectorMachine{
     public static void main(String[] args){
         ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Linear SVM"));
-        String path = Test.data100();
+        String path = AlgorithmTest.data100();
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
         ApexRDD<LabeledPoint> data = new ApexRDD<>(MLUtils.loadLibSVMFile(sc, path),tag);
 

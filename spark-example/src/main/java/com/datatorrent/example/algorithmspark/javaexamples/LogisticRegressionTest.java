@@ -1,6 +1,6 @@
-package com.datatorrent.example.algorithmspark;
+package com.datatorrent.example.algorithmspark.javaexamples;
 
-import com.datatorrent.example.apexscala.Test;
+import com.datatorrent.example.apexscala.AlgorithmTest;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
@@ -21,7 +21,7 @@ public class LogisticRegressionTest {
         SparkContext sc= new SparkContext(new SparkConf().setMaster("local[2]").setAppName("Kmeans"));
         String path = "/home/anurag/spark-master/data/mllib/sample_libsvm_data.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        JavaRDD<LabeledPoint> data = new JavaRDD<>( MLUtils.loadLibSVMFile(sc,Test.diabetes()),tag);
+        JavaRDD<LabeledPoint> data = new JavaRDD<>( MLUtils.loadLibSVMFile(sc,AlgorithmTest.diabetes()),tag);
 
         // Split initial RDD into two... [60% training data, 40% testing data].
         JavaRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
@@ -34,7 +34,7 @@ public class LogisticRegressionTest {
                 .run(training.rdd());
 
         // Compute raw scores on the test set.
-        JavaRDD<Tuple2<Object, Object>> predictionAndLabels = (JavaRDD<Tuple2<Object, Object>>) test.map(
+        JavaRDD<Tuple2<Object, Object>> predictionAndLabels = test.map(
                 new Function<LabeledPoint, Tuple2<Object, Object>>() {
                     public Tuple2<Object, Object> call(LabeledPoint p) {
                         Double prediction = model.predict(p.features());

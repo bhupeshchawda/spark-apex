@@ -1,10 +1,10 @@
-package com.datatorrent.example.algorithmtest;
+package com.datatorrent.example.algorithmapex;
 
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
 import com.datatorrent.example.apexscala.DecisionTreeApex;
-import com.datatorrent.example.apexscala.Test;
+import com.datatorrent.example.apexscala.AlgorithmTest;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.util.MLUtils;
@@ -20,7 +20,7 @@ public class DecisionTreeJava {
         ApexConf apexConf = new ApexConf().setMaster("local[2]").setAppName("JavaDecisionTreeClassificationExample");
         ApexContext ac = new ApexContext(apexConf);
         // Load and parse the data file.
-        String datapath = Test.data100();
+        String datapath = AlgorithmTest.data100();
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
         ApexRDD<LabeledPoint> data = new ApexRDD<>(MLUtils.loadLibSVMFile(ac, datapath),tag);
 // Split the data into training and test sets (30% held out for testing)

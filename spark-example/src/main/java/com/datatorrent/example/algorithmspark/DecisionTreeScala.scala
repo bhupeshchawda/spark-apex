@@ -1,6 +1,6 @@
 package com.datatorrent.example.algorithmspark
 
-import com.datatorrent.example.apexscala.Test
+import com.datatorrent.example.apexscala.AlgorithmTest
 import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.mllib.tree.model.DecisionTreeModel
 import org.apache.spark.mllib.util.MLUtils
@@ -19,7 +19,7 @@ object DecisionTreeScala{
     val conf = new SparkConf().setMaster("local").setAppName("Decision Tree")
     val sc = new SparkContext(conf)
     // Load and parse the data file.
-    val data = MLUtils.loadLibSVMFile(sc, Test.data100)
+    val data = MLUtils.loadLibSVMFile(sc, AlgorithmTest.data100)
     // Split the data into training and test sets (30% held out for testing)
     val splits = data.randomSplit(Array(0.7, 0.3))
     val (trainingData, testData) = (splits(0), splits(1))

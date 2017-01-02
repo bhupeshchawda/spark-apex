@@ -1,4 +1,4 @@
-package com.datatorrent.example.algorithmtest;
+package com.datatorrent.example.algorithmapex;
 
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;

@@ -4,7 +4,7 @@ package com.datatorrent.example.algorithmtest;
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import com.datatorrent.example.apexscala.Test;
+import com.datatorrent.example.apexscala.AlgorithmTest;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
@@ -21,7 +21,7 @@ public class LogisticRegression {
         ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Kmeans"));
         String path = "/home/anurag/spark-apex/spark-example/src/main/resources/data/diabetes.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        ApexRDD<LabeledPoint> data = new ApexRDD<>( MLUtils.loadLibSVMFile(sc, Test.data100()),tag);
+        ApexRDD<LabeledPoint> data = new ApexRDD<>( MLUtils.loadLibSVMFile(sc, AlgorithmTest.data100()),tag);
 
         ApexRDD<LabeledPoint>[] splits = data.randomSplit(new double[] {0.6, 0.4}, 11L);
         ApexRDD<LabeledPoint> training = splits[0];
@@ -41,13 +41,6 @@ public class LogisticRegression {
         );
 
         model.save(sc, "target/tmp/apexLogisticRegressionWithLBFGSModel");
-//        LogisticRegressionModel sameModel = LogisticRegressionModel.load(sc,
-//                "/home/anurag/spark-apex/spark-example/target/tmp/apexLogisticRegressionWithLBFGSModel");
-//        // Get evaluation metrics.
-//
-//        MulticlassMetrics metrics = new MulticlassMetrics(predictionAndLabels);
-//        double accuracy = metrics.accuracy();
-//        System.out.println("Accuracy = " + accuracy);
     }
 
 }
