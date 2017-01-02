@@ -6,6 +6,8 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
   * Created by anurag on 16/12/16.
   */
@@ -33,11 +35,9 @@ import org.apache.spark.{SparkConf, SparkContext}
 //object X {
 //  implicit def xx = new X(3)
 //}
-class AlgorithmTest(){
 
-}
 
-object AlgorithmTest {
+object MLlibAlgorithmTest {
   var data100= ""
   var diabetes = "/home/anurag/dev/spark-apex/spark-example/src/main/resources/data/diabetes.txt"
 //  def setProperties(): Unit ={
@@ -47,14 +47,14 @@ object AlgorithmTest {
 //    diabetes=prop.getProperty(diabetes)
 //  }
 
-  def testLogisticRegression(sc:SparkContext): Unit ={
+  def testLogisticRegression(sc:SparkContext): (Double,Double) ={
 
     val data2 = MLUtils.loadLibSVMFile(sc, diabetes )
     // Split data into training (60%) and test (40%).
     val splits = data2.randomSplit(Array(0.6, 0.4))
     val training = splits(0).cache()
     val test = splits(1)
-    val apexModel = LogisticRegressionModel.load(sc, "/home/anurag/spark-apex/spark-example/target/tmp/apexLogisticRegressionWithLBFGSModel")
+    val apexModel = LogisticRegressionModel.load(sc, "target/tmp/apexLogisticRegressionWithLBFGSModel")
     val predictionAndLabels = test.map { case LabeledPoint(label, features) =>
       val prediction = apexModel.predict(features)
       (prediction, label)
@@ -63,15 +63,16 @@ object AlgorithmTest {
     val accuracyApexModel=metrics.accuracy
 
 
-    val sparkModel = LogisticRegressionModel.load(sc, "/home/anurag/spark-apex/spark-example/target/tmp/scalaLogisticRegressionWithLBFGSModel")
+    val sparkModel = LogisticRegressionModel.load(sc, "target/tmp/scalaLogisticRegressionWithLBFGSModel")
     val predictionAndLabelsSpark = test.map { case LabeledPoint(label, features) =>
       val prediction = sparkModel.predict(features)
       (prediction, label)
     }
     val metrics2 = new MulticlassMetrics(predictionAndLabelsSpark)
     val accuracySparkModel=metrics2.accuracy
-    println("Apex model accuracy " + accuracyApexModel)
-    println("Spark model accuracy " +accuracySparkModel)
+    println("Apex Accuracy "+accuracyApexModel)
+    println("Spark Accuracy "+accuracySparkModel)
+    (accuracyApexModel,accuracySparkModel)
 
   }
   def testLinearSVM(sc:SparkContext): Unit ={
@@ -107,11 +108,14 @@ object AlgorithmTest {
     println("Spark:- Area under ROC = " + auROCSpark)
     println("Apex:- Area under ROC = " + auROCApex)
   }
+
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName("AlgorithmTEST").setMaster("local")
     val sc = new SparkContext(conf)
-
-    testLinearSVM(sc)
+    val data=new ArrayBuffer[(Double,Double)]
+    for(a<- 1 to 50)
+      data+=testLogisticRegression(sc)
+    println(data)
   }
   //    Logistic Regression
   //    Apex model accuracy 0.6622516556291391

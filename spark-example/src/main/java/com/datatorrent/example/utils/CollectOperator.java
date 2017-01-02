@@ -24,6 +24,7 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
+            log.info("Type of tuple: {}, ",tuple.getClass());
             t.add(tuple);
             count++;
         }

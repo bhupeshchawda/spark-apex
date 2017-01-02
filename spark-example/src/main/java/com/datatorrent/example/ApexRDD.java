@@ -28,6 +28,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -157,6 +159,16 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         T[] array= (T[]) CollectOperator.t.toArray();
 
         return array;
+    }
+
+    @Override
+    public T[] take(int num) {
+        ArrayList<T> a = new ArrayList<>(num);
+        Object[] ret = this.collect();
+        for ( int i=0; i< num; i++) {
+            a.add((T) ret[i]);
+        }
+    return a.toArray((T[]) Array.newInstance(this.getClass().getTypeParameters()[0].getClass(), num));
     }
 
     @Override

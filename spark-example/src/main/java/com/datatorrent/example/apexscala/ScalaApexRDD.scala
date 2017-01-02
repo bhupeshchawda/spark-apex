@@ -5,8 +5,8 @@ import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+
 /**
   * Created by anurag on 16/12/16.
   */
@@ -75,27 +75,29 @@ import scala.reflect.ClassTag
     partiallyAggregated.reduce(cleanCombOp)
   }
 
-  override def take(num: Int): Array[T] = {
-    println(num)
-    var a =new ArrayBuffer[T](num)
-    if(num==1){
-
-      a+=this.collect()(0)
-      println(a)
-      return a.toArray
-    }
-    var count=0;
-//    for( o <-this.collect()){
-//      if(count>=num)
-//        return a.toArray
-//      else{
-//        a+=o
-//        count=count+1
-//      }
+//  override def take(num: Int): Array[T] = {
+//    println(num)
+//    var a = new  util.ArrayList[T]()
+////    var a =new ArrayBuffer[T](num)
+//    if(num==1){
+//
+//      a.add(this.collect()(0))
+//      println("Collected element: " + a)
+//      a.toArray
+////      return a
 //    }
-   a.toArray
-
-  }
+//    var count=0;
+////    for( o <-this.collect()){
+////      if(count>=num)
+////        return a.toArray
+////      else{
+////        a+=o
+////        count=count+1
+////      }
+////    }
+////   a.toArray
+//    return scala.collection.JavaConversions.asScalaBuffer(a).toArray
+//  }
 
   override def keyBy[K](f: (T) => K): RDD[(K, T)] ={
     this.map(x => (f(x), x))
