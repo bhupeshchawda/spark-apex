@@ -38,7 +38,7 @@ import org.apache.spark.mllib.util.MLUtils;
 public class JavaHypothesisTestingExample {
   public static void main(String[] args) {
 
-    SparkConf conf = new SparkConf().setAppName("JavaHypothesisTestingExample").setMaster("local[2]").set("spark.executor.memory","1g");;
+    SparkConf conf = new SparkConf().setAppName("JavaHypothesisTestingExample").setMaster("local[2]").set("spark.executor.memory","1g");
     JavaSparkContext jsc = new JavaSparkContext(conf);
 
     // $example on$

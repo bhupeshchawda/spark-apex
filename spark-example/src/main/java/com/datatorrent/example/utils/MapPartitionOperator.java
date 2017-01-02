@@ -20,22 +20,27 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
     public Function1 f;
     public DefaultOutputPortSerializable output = new DefaultOutputPortSerializable();
     ArrayList<T> rddData;
-
+    boolean doEmit=false,doEnable;
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         ID=context.getId();
         rddData = new ArrayList<>();
+        doEnable=true;
     }
 
     @Override
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
+        doEmit=true;
+
     }
+
 
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
+            doEmit = false;
             try{
                 rddData.add(tuple);
             } catch (Exception e){
@@ -48,10 +53,16 @@ public class MapPartitionOperator<T,U> extends MyBaseOperator implements Seriali
     @Override
     public void endWindow() {
         super.endWindow();
-        Iterator<U> iterU = (Iterator<U>) f.apply(scala.collection.JavaConversions.asScalaIterator(rddData.iterator()));
-        while (iterU.hasNext())
-            output.emit(iterU.next());
+        if(doEnable)
+            if(doEmit) {
+                Iterator<U> iterU = (Iterator<U>) f.apply(scala.collection.JavaConversions.asScalaIterator(rddData.iterator()));
+                while (iterU.hasNext())
+                    output.emit(iterU.next());
+                doEnable=false;
+            }
+
     }
+
 
     @Override
     public DefaultInputPortSerializable<Object> getInputPort() {

@@ -380,6 +380,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
         HashMap hashMap = countByVlaueOperator.hashMap;
         System.out.println(hashMap.size());
+        System.out.println(hashMap.values().toArray().toString());
         Map<T, Object> map = this.scalaMap(hashMap);
         return map;
     }
