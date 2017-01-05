@@ -1,9 +1,11 @@
 package com.datatorrent.example;
 
 import com.datatorrent.api.LocalMode;
+import com.datatorrent.api.StreamingApplication;
 import com.datatorrent.example.apexscala.ApexPartition;
 import com.datatorrent.example.apexscala.ScalaApexRDD;
 import com.datatorrent.example.utils.*;
+import com.datatorrent.stram.client.StramAppLauncher;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
@@ -24,10 +26,7 @@ import scala.Option;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -155,7 +154,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
 //        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"collect");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         T[] array= (T[]) CollectOperator.t.toArray();
 
         return array;
@@ -254,7 +257,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         writer.setAbsoluteFilePath("/tmp/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"reduce");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return (T) ReduceOperator.finalValue;
     }
 
@@ -286,7 +293,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputDataCount");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"count");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         Integer count = fileReader("/tmp/outputDataCount");
         if(count==null)
             return 0L;
@@ -341,11 +352,15 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         apexRDDClone.dag =cloneDag;
         return apexRDDClone;
     }
-    public void runDag(MyDAG cloneDag,long runMillis){
+    public void runDag(MyDAG cloneDag,long runMillis,String name) throws Exception {
         cloneDag.validate();
         log.debug("DAG successfully validated");
         LocalMode lma = LocalMode.newInstance();
-        Configuration conf = new Configuration(false);
+        Configuration conf = new Configuration(true);
+//        conf.set("dt.dfsRootDirectory","/user/anurag");
+//        conf.set("fs.defaultFS","hdfs://localhost:54310");
+//        conf.set("yarn.resourcemanager.address", "localhost:8031");
+//        conf.addResource(new File("/home/anurag/datatorrent/current/conf/dt-site.xml").toURI().toURL());
         GenericApplication app = new GenericApplication();
         app.setDag(cloneDag);
         try {
@@ -353,8 +368,12 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         } catch (Exception e) {
             throw new RuntimeException("Exception in prepareDAG", e);
         }
-        LocalMode.Controller lc = lma.getController();
-        lc.run(runMillis);
+        StramAppLauncher appLauncher = new StramAppLauncher(name, conf);
+        appLauncher.loadDependencies();
+        StreamingAppFactory appFactory = new StreamingAppFactory(app, name);
+        appLauncher.launchApp(appFactory);
+//        LocalMode.Controller lc = lma.getController();
+
 
     }
     public enum OperatorType {
