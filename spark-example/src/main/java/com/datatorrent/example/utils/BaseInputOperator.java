@@ -2,14 +2,12 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
+import com.datatorrent.example.ApexRDD;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.Serializable;
+import java.io.*;
 import java.net.URI;
 
 /**
@@ -19,6 +17,7 @@ import java.net.URI;
 public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOperator,Serializable {
     private BufferedReader br;
     public String path;
+    public boolean shutApp=false;
 
     public BaseInputOperator(){
 
@@ -57,18 +56,33 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
 
         }
     }
+
+    @Override
+    public void endWindow() {
+        super.endWindow();
+        if(shutApp) {
+            try {
+                if (checkSucess("hdfs://localhost:54310/harsh/chi/success/ChiReduceSuccess")) {
+                    throw new ShutdownException();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
-        if(sent){
+        if(sent) {
             controlOut.emit(true);
+            shutApp=true;
         }
     }
 
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
-        System.out.println("Basic");
         try{
             Configuration conf = new Configuration();
             Path pt=new Path("hdfs://localhost:54310/harsh/chi/sample_libsvm_data.txt");
@@ -77,6 +91,16 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
         }catch(Exception e){
             e.printStackTrace();
         }
+    }
+    public boolean checkSucess(String path) throws IOException {
+        Configuration conf = new Configuration();
+        Path pt=new Path("hdfs://localhost:54310/harsh/chi/success/ChiReduceSuccess");
+        FileSystem hdfs = FileSystem.get(pt.toUri(), conf);
+        if(hdfs.exists(pt))
+            return true;
+        else
+            return false;
+
     }
 
     @Override

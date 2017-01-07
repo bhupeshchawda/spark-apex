@@ -2,8 +2,11 @@ package com.datatorrent.example.utils;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
 
 import java.io.*;
+import java.net.URI;
 import java.util.HashMap;
 
 /**
@@ -11,28 +14,42 @@ import java.util.HashMap;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Serializable{
+    private BufferedWriter bw;
+    private FileSystem hdfs;
+    OutputStream os;
+    public String absoluteFilePath = "hdfs://localhost:54310";
     public ObjectFileWriterOperator(){}
-    public static String absoluteFilePath;
     public DefaultInputPortSerializable<HashMap> input =  new DefaultInputPortSerializable<HashMap>() {
         @Override
         public void process(HashMap tuple) {
-            File fileOne=new File(absoluteFilePath);
-            FileOutputStream fos= null;
+            Configuration configuration = new Configuration();
             try {
-                fos = new FileOutputStream(fileOne);
-                ObjectOutputStream oos=new ObjectOutputStream(fos);
-                oos.writeObject(tuple);
-                oos.flush();
-                oos.close();
-                fos.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+                hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
+                Path file = new Path(absoluteFilePath);
+                if (hdfs.exists(file)) {
+                    hdfs.delete(file, true);
+                }
+                os = hdfs.create(file);
+            } catch (Exception e) {
+                throw new RuntimeException();
             }
-
-
-
+            try {
+                try{
+                    ObjectOutputStream oos=new ObjectOutputStream(os);
+                    oos.writeObject(tuple);
+                    oos.flush();
+                    oos.close();
+                    hdfs.close();
+                }catch (Exception e){
+                    ObjectOutputStream oos=new ObjectOutputStream(os);
+                    oos.writeObject(tuple);
+                    oos.flush();
+                    oos.close();
+                    hdfs.close();
+                }
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
 
         }
     };

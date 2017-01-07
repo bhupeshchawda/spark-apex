@@ -22,7 +22,6 @@ public class GenericApplication implements StreamingApplication
 {
     private LogicalPlan dag;
 
-
     public void setDag(LogicalPlan dag)
     {
         this.dag = dag;
@@ -36,7 +35,7 @@ public class GenericApplication implements StreamingApplication
             for (InputPortMeta i : s.getSinks()) {
                 Operator.OutputPort<Object> op = (OutputPort<Object>) s.getSource().getPortObject();
                 Operator.InputPort<Object> ip = (InputPort<Object>) i.getPortObject();
-                dag.addStream(s.getName(), op, ip);
+                dag.addStream(s.getName(), op, ip).setLocality(DAG.Locality.CONTAINER_LOCAL);
                 dag.setInputPortAttribute(s.getSinks().get(0).getPortObject(), Context.PortContext.STREAM_CODEC,
                         new JavaSerializationStreamCodec());
             }

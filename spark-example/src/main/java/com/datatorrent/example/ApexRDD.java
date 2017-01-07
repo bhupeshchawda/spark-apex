@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
 import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
@@ -43,6 +44,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public DefaultOutputPortSerializable currentOutputPort;
     public DefaultOutputPortSerializable<Boolean> controlOutput;
     public  MyDAG dag;
+    public static final String reduceApp = "Reduce";
+    public static final String firstApp = "First";
+    public static final String countByValueApp = "CountByValue";
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     protected Option partitioner = new ApexRDDOptionPartitioner();
     public static ApexContext context;
@@ -162,7 +166,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/harsh/outputData");
+        writer.setAbsoluteFilePath("/harsh/chi/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
@@ -173,41 +177,33 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"Reduce",RDDLIBJARS);
+            apexDoTask.launch(app,reduceApp,RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        /*try {
-            lma.prepareDAG(app, conf);
-        } catch (Exception e) {
-            throw new RuntimeException("Exception in prepareDAG", e);
-        }
-        LocalMode.Controller lc = lma.getController();
-        lc.run(10000);*/
-        Integer reduce = fileReader("/harsh/outputData");
+        Integer reduce = fileReader("hdfs://localhost:54310/harsh/chi/outputData");
         return (T) reduce;
     }
 
     public static Integer fileReader(String path){
         BufferedReader br = null;
-        FileReader fr = null;
+        FileSystem hdfs=null;
         try{
-            fr = new FileReader(path);
-            br = new BufferedReader(fr);
-            String line;
-            br = new BufferedReader(new FileReader(path));
-            while((line = br.readLine())!=null){
+            Configuration conf = new Configuration();
+            Path pt=new Path(path);
+            hdfs = FileSystem.get(pt.toUri(), conf);
+            br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
+            String line = br.readLine();
+            while (line!=null)
                 return Integer.valueOf(line);
-            }
-        } catch (java.io.IOException e) {
+        }catch(Exception e){
             e.printStackTrace();
-        }finally {
+        }
+        finally {
             try{
                 if(br!=null)
                     br.close();
-                if(fr!=null)
-                    fr.close();
+                    hdfs.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -216,23 +212,23 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     }
     public static String SfileReader(String path){
         BufferedReader br = null;
-        FileReader fr = null;
+        FileSystem hdfs=null;
         try{
-            fr = new FileReader(path);
-            br = new BufferedReader(fr);
-            String line;
-            br = new BufferedReader(new FileReader(path));
-            while((line = br.readLine())!=null){
+            Configuration conf = new Configuration();
+            Path pt=new Path(path);
+            hdfs = FileSystem.get(pt.toUri(), conf);
+            br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
+            String line = br.readLine();
+            while (line!=null)
                 return line;
-            }
-        } catch (java.io.IOException e) {
+        }catch(Exception e){
             e.printStackTrace();
-        }finally {
+        }
+        finally {
             try{
                 if(br!=null)
                     br.close();
-                if(fr!=null)
-                    fr.close();
+                hdfs.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -240,24 +236,29 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         return null;
     }
     public static HashMap ObjectReader(String path){
+        BufferedReader br = null;
+        FileSystem hdfs=null;
         File toRead=new File(path);
         FileInputStream fis= null;
         HashMap mapInFile = null;
-        try {
-            fis = new FileInputStream(toRead);
-            ObjectInputStream ois=new ObjectInputStream(fis);
-             mapInFile=(HashMap)ois.readObject();
-
-            ois.close();
-            fis.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        try{
+            Configuration conf = new Configuration();
+            Path pt=new Path(path);
+            hdfs = FileSystem.get(pt.toUri(), conf);
+            ObjectInputStream ois=new ObjectInputStream((hdfs.open(pt)));
+            mapInFile=(HashMap)ois.readObject();
+        }catch(Exception e){
             e.printStackTrace();
         }
-
+        finally {
+            try {
+                if (br != null)
+                    br.close();
+                hdfs.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         return mapInFile;
     }
 
@@ -287,7 +288,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputDataCount");
+        writer.setAbsoluteFilePath("/harsh/chi/outputDataCount");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         cloneDag.validate();
 
@@ -297,12 +298,12 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"Count");
+            apexDoTask.launch(app,"ChiCount",RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        Integer count = fileReader("/tmp/outputDataCount");
+        Integer count = fileReader("/harsh/chi/outputDataCount");
         return count;
     }
 
@@ -315,7 +316,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         cloneDag.addStream(System.currentTimeMillis()+"FirstTupleStream",currentOutputPort,firstOpertaor.input);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputDataFirst");
+        writer.setAbsoluteFilePath("/harsh/chi/outputDataFirst");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", firstOpertaor.output, writer.input);
         cloneDag.validate();
         log.info("DAG successfully validated");
@@ -324,11 +325,11 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"Reduce","/home/harsh/apex-integration/spark-apex/spark-example/OUTPUT_DIR/");
+            apexDoTask.launch(app,firstApp,RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        String first = SfileReader("/tmp/outputDataFirst");
+        String first = SfileReader("hdfs://localhost:54310/harsh/chi/outputDataFirst");
         T a= (T) LabeledPoint$.MODULE$.parse(first);
         return a;
     }
@@ -384,7 +385,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         controlOutput= getControlOutput(cloneDag);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countByVlaueOperator.controlDone);
         ObjectFileWriterOperator fileWriterOperator=cloneDag.addOperator(System.currentTimeMillis()+ "WriteMap ",new ObjectFileWriterOperator());
-        fileWriterOperator.setAbsoluteFilePath("/tmp/CountByValueOutput");
+        fileWriterOperator.setAbsoluteFilePath("/harsh/chi/countByValueOutput");
         cloneDag.addStream(System.currentTimeMillis()+" MapWrite", countByVlaueOperator.output, fileWriterOperator.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
@@ -393,12 +394,12 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"CountByValue");
+            apexDoTask.launch(app,countByValueApp,RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        HashMap hashMap= ObjectReader("/tmp/CountByValueOutput");
+        HashMap hashMap= ObjectReader("hdfs://localhost:54310/harsh/chi/countByValueOutput");
         Map<T, Object> map = this.scalaMap(hashMap);
         return map;
     }
@@ -420,7 +421,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"Collect");
+            apexDoTask.launch(app,"ChiCollect",RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -447,7 +448,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"Collect");
+            apexDoTask.launch(app,"ChiForeach",RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
