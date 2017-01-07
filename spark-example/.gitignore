@@ -2,3 +2,4 @@
 .idea/
 spark-example.iml
 /.idea/
+/OUTPUT_DIR/

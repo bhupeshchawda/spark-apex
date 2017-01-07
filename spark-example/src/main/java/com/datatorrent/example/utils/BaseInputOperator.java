@@ -2,11 +2,15 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.net.URI;
 
 /**
  * Created by harsh on 2/12/16.
@@ -64,12 +68,12 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
+        System.out.println("Basic");
         try{
-//            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
-            FileInputStream fs = new FileInputStream(path);
-            br=new BufferedReader(new InputStreamReader(fs));
-
-
+            Configuration conf = new Configuration();
+            Path pt=new Path("hdfs://localhost:54310/harsh/chi/sample_libsvm_data.txt");
+            FileSystem hdfs = FileSystem.get(pt.toUri(), conf);
+            br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
         }catch(Exception e){
             e.printStackTrace();
         }

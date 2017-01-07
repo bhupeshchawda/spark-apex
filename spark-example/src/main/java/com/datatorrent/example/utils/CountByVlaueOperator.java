@@ -18,10 +18,11 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     public CountByVlaueOperator() {
 
     }
-
+    boolean doEmit=false,doEnable;
     @Override
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
+        doEmit=true;
     }
 
     public final  DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
@@ -38,11 +39,13 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         hashMap= new HashMap<>();
+        doEnable=true;
     }
     public DefaultInputPortSerializable input = new DefaultInputPortSerializable() {
         @Override
         public void process(Object tuple) {
             {
+                doEmit=false;
                 if(hashMap.containsKey(tuple)) {
                     long x= hashMap.get(tuple).longValue();
                     hashMap.put(tuple, new Long(x+1));
@@ -53,6 +56,16 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
             }
         }
     };
+
+    @Override
+    public void endWindow() {
+        super.endWindow();
+        if(doEnable)
+            if(doEmit)
+                output.emit(hashMap);
+    }
+
+    public DefaultOutputPortSerializable<HashMap> output = new DefaultOutputPortSerializable<HashMap>();
     @Override
     public DefaultInputPortSerializable<Object> getInputPort() {
         return input;
@@ -62,7 +75,7 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
 
     @Override
     public DefaultOutputPortSerializable getOutputPort() {
-        return null;
+        return output;
     }
 
     @Override
