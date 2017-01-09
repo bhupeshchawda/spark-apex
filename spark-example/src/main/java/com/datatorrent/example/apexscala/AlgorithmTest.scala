@@ -1,5 +1,7 @@
 package com.datatorrent.example.apexscala
 
+import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -106,11 +108,11 @@ object AlgorithmTest {
     println("Spark:- Area under ROC = " + auROCSpark)
     println("Apex:- Area under ROC = " + auROCApex)
   }
+
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName("Algorithm TEST").setMaster("local")
     val sc = new SparkContext(conf)
 
-    testLinearSVM(sc)
   }
   //    Logistic Regression
   //    Apex model accuracy 0.6622516556291391

@@ -1,8 +1,11 @@
 package com.datatorrent.example.algorithmtest
 
+import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression
+import org.apache.spark.mllib.regression.{LabeledPoint, LinearRegressionWithSGD}
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -108,6 +111,21 @@ object MLlibAlgorithmTest {
     println("Spark:- Area under ROC = " + auROCSpark)
     println("Apex:- Area under ROC = " + auROCApex)
   }
+  def testLinearRegression(sc:SparkContext): Unit ={
+    val data = sc.textFile("/home/krushika/dev/spark-apex/spark-example/src/main/resources/data/lspaTest.txt")
+    val parsedData=data.map{line=>
+    val parts=line.split(',')
+    LabeledPoint(parts(0).toDouble,Vectors.dense(parts(1).split(' ').map(_.toDouble)))
+    }
+
+    val model=regression.LinearRegressionModel.load(sc,"/home/krushika/dev/spark-apex/spark-example/target/tmp/apexLinearModel")
+    val valuesAndPreds = parsedData.map{ point =>
+    val prediction = model.predict(point.features)
+      (point.label,prediction)
+    }
+    val MSE = valuesAndPreds.map{case(v, p) => math.pow((v - p), 2)}.mean()
+    println("training Mean Squared Error = " + MSE)
+  }
 
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName("AlgorithmTEST").setMaster("local")
@@ -124,4 +142,7 @@ object MLlibAlgorithmTest {
   //    LinearSVM
   //    Spark:- Area under ROC = 0.7174120795107028
   //    Apex:- Area under ROC = 0.5
+  val conf = new SparkConf().setAppName("Algorithm TEST").setMaster("local")
+  val sc = new SparkContext(conf)
+  testLinearRegression(sc)
 }
