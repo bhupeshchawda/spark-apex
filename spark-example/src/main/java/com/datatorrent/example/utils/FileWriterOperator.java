@@ -46,14 +46,14 @@ public class FileWriterOperator extends BaseOperator
             try {
                 try{
                     BufferedWriter br = new BufferedWriter( new OutputStreamWriter( os, "UTF-8" ) );
-                    br.write(tuple.toString());
+                    br.append(tuple.toString());
                     br.close();
                     hdfs.close();
                     shutDown=true;
                    // bw.write(tuple.toString());
                 }catch (Exception e){
                     BufferedWriter br = new BufferedWriter( new OutputStreamWriter( os, "UTF-8" ) );
-                    br.write(tuple.toString());
+                    br.append(tuple.toString());
                     br.close();
                     hdfs.close();
                     e.printStackTrace();

@@ -3,8 +3,12 @@ package com.datatorrent.example.utils;
 import com.datatorrent.api.Context;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Created by harsh on 28/12/16.
@@ -12,18 +16,30 @@ import java.io.*;
 @DefaultSerializer(JavaSerializer.class)
 public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Serializable {
     public static BufferedWriter bw;
-    public static String absoluteFilePath;
     public SimpleFileWriteOperator(){}
+    Configuration configuration;
+    OutputStream os;
+    boolean closeStreams=false;
+    private FileSystem hdfs;
+    public String absoluteFilePath = "hdfs://localhost:54310";
 
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         try {
-            bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(absoluteFilePath)));
-            bw.flush();
+            configuration = new Configuration();
+            hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
+            Path file = new Path(absoluteFilePath);
+            if (hdfs.exists(file)) {
+                hdfs.delete(file, true);
+            }
+            os = hdfs.create(file);
+            bw = new BufferedWriter(new OutputStreamWriter(os,"UTF-8"));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
             e.printStackTrace();
         }
     }
@@ -31,11 +47,10 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
+            closeStreams = false;
             try {
-                bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(absoluteFilePath,true)));
                 bw.append(tuple.toString());
                 bw.newLine();
-                bw.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -46,16 +61,27 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
     @Override
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
+        closeStreams = true;
     }
 
     @Override
     public void endWindow() {
         super.endWindow();
+        if(closeStreams){
+            try {
+                bw.close();
+                hdfs.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
     }
 
     public void setAbsoluteFilePath(String absoluteFilePath)
     {
-        this.absoluteFilePath = absoluteFilePath;
+        this.absoluteFilePath += absoluteFilePath;
     }
     @Override
     public DefaultInputPortSerializable<T> getInputPort() {

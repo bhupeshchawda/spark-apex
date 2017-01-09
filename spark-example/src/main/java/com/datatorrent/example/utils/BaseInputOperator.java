@@ -61,6 +61,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     public void endWindow() {
         super.endWindow();
         if(shutApp) {
+            shutApp=false;
             try {
                 if (checkSucess("hdfs://localhost:54310/harsh/chi/success/ChiReduceSuccess")) {
                     throw new ShutdownException();

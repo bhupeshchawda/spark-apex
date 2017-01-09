@@ -47,6 +47,8 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public static final String reduceApp = "Reduce";
     public static final String firstApp = "First";
     public static final String countByValueApp = "CountByValue";
+    public static final String forEachApp ="ForEach";
+    public static final String collectApp="Collect";
     public ApexRDDPartitioner apexRDDPartitioner = new ApexRDDPartitioner();
     protected Option partitioner = new ApexRDDOptionPartitioner();
     public static ApexContext context;
@@ -238,14 +240,13 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public static HashMap ObjectReader(String path){
         BufferedReader br = null;
         FileSystem hdfs=null;
-        File toRead=new File(path);
-        FileInputStream fis= null;
+        ObjectInputStream ois=null;
         HashMap mapInFile = null;
         try{
             Configuration conf = new Configuration();
             Path pt=new Path(path);
             hdfs = FileSystem.get(pt.toUri(), conf);
-            ObjectInputStream ois=new ObjectInputStream((hdfs.open(pt)));
+             ois=new ObjectInputStream((hdfs.open(pt)));
             mapInFile=(HashMap)ois.readObject();
         }catch(Exception e){
             e.printStackTrace();
@@ -255,6 +256,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
                 if (br != null)
                     br.close();
                 hdfs.close();
+                ois.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -439,7 +441,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ForEachStream", currentOutputPort, foreach.input);
         SimpleFileWriteOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", new SimpleFileWriteOperator());
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/transformer/filterData");
+        writer.setAbsoluteFilePath("/harsh/chi/filteredData");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", foreach.output, writer.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
@@ -448,7 +450,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
         try {
-            apexDoTask.launch(app,"ChiForeach",RDDLIBJARS);
+            apexDoTask.launch(app,forEachApp,RDDLIBJARS);
         } catch (Exception e) {
             e.printStackTrace();
         }
