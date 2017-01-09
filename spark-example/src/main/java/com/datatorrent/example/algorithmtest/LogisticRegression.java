@@ -4,13 +4,11 @@ package com.datatorrent.example.algorithmtest;
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import junit.framework.Assert;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
-import scala.Tuple2;
+import org.junit.Assert;
 import scala.reflect.ClassTag;
 
 /**
@@ -19,7 +17,7 @@ import scala.reflect.ClassTag;
 public class LogisticRegression {
     public static  void main(String [] args){
         ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Kmeans"));
-        String path = "diabetes.txt";
+        String path = "/home/anurag/spark-apex/spark-example/src/main/resources/data/diabetes.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
         ApexRDD<LabeledPoint> data = new ApexRDD<>( MLUtils.loadLibSVMFile(sc,path),tag);
         System.out.println(data.count());

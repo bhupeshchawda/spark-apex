@@ -1,0 +1,11 @@
+<configuration>
+    <property></property>
+<property>
+    <name>dt.application.collect.operator.*.attr.MEMORY_MB</name>
+    <value>128</value>
+    <name>dt.application.reduce.operator.*.attr.MEMORY_MB</name>
+    <value>128</value>
+    <name>dt.application.count.operator.*.attr.MEMORY_MB</name>
+    <value>128</value>
+</property>
+</configuration>

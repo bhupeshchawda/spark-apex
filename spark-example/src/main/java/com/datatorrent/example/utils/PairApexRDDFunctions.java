@@ -1,11 +1,11 @@
 package com.datatorrent.example.utils;
 
 import com.datatorrent.example.ApexRDD;
-import junit.framework.Assert;
 import org.apache.spark.Partitioner;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.serializer.Serializer;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function1;

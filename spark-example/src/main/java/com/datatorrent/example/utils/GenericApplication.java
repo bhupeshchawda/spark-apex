@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
+
 public class GenericApplication implements StreamingApplication,Serializable
 {
     private LogicalPlan dag;
@@ -40,7 +41,7 @@ public class GenericApplication implements StreamingApplication,Serializable
             for (InputPortMeta i : s.getSinks()) {
                 Operator.OutputPort<Object> op = (OutputPort<Object>) s.getSource().getPortObject();
                 Operator.InputPort<Object> ip = (InputPort<Object>) i.getPortObject();
-                dag.addStream(s.getName(), op, ip);
+                dag.addStream(s.getName(), op, ip).setLocality(DAG.Locality.CONTAINER_LOCAL);
                 dag.setInputPortAttribute(s.getSinks().get(0).getPortObject(), Context.PortContext.STREAM_CODEC,
                         new JavaSerializationStreamCodec());
             }
