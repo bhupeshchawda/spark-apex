@@ -58,6 +58,7 @@ public class LinearRegressionTrain {
         final LinearRegressionModel model =
                 LinearRegressionWithSGD.train(parsedData, numIterations);
 
+        model.toPMML(sc,"target/tmp/PMMLModelLinear");
         model.save(sc, properties.getProperty("LinearRegressionModelPath"));
 
 

@@ -1,10 +1,10 @@
-package com.datatorrent.example.apexlogisticregression;
+package com.datatorrent.example.apexsvm;
 
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import org.apache.spark.mllib.classification.LogisticRegressionModel;
-import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
+import org.apache.spark.mllib.classification.SVMModel;
+import org.apache.spark.mllib.classification.SVMWithSGD;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import scala.reflect.ClassTag;
@@ -17,10 +17,10 @@ import java.util.Properties;
 /**
  * Created by krushika on 5/1/17.
  */
-public class LogisticRegressionTrain {
+public class SVMTrain {
     public static void main(String[] args){
         Properties properties = new Properties();
-        InputStream input ;
+        InputStream input;
         try{
             input = new FileInputStream("/home/krushika/dev/spark-apex/spark-example/src/main/java/com/datatorrent/example/properties/svm.properties");
             properties.load(input);
@@ -28,16 +28,15 @@ public class LogisticRegressionTrain {
             e.printStackTrace();
         }
 
-        ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Logistic Regression Train Module"));
+        ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Linear SVM"));
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        ApexRDD<LabeledPoint> data = new ApexRDD<>( MLUtils.loadLibSVMFile(sc,properties.getProperty("trainData")),tag);
+        ApexRDD<LabeledPoint> data = new ApexRDD<>(MLUtils.loadLibSVMFile(sc, properties.getProperty("trainData")),tag);
 
-        final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
-                .setNumClasses(10)
-                .run(data);
-        model.save(sc, properties.getProperty("LogisticRegressionModelPath"));
+        int numIterations = 100;
+        final SVMModel model = SVMWithSGD.train(data, numIterations);
 
-
+// Clear the default threshold.
+        model.clearThreshold();
+        model.save(sc,properties.getProperty("SVMModelPath"));
     }
-
 }

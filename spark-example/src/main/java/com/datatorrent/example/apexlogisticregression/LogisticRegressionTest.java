@@ -26,7 +26,7 @@ public class LogisticRegressionTest {
         Properties properties = new Properties();
         InputStream input;
         try{
-            input = new FileInputStream(properties.getProperty("/home/krushika/dev/spark-apex/spark-example/src/main/java/com/datatorrent/example/properties/svm.properties"));
+            input = new FileInputStream("/home/krushika/dev/spark-apex/spark-example/src/main/java/com/datatorrent/example/properties/svm.properties");
             properties.load(input);
         } catch (IOException e) {
             e.printStackTrace();
