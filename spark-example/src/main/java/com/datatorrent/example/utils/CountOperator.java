@@ -24,7 +24,7 @@ public class CountOperator<T> extends MyBaseOperator implements Serializable
             output.emit(count);
         }
     }
-    Integer count =0;
+    Long count =0L;
     public final  DefaultInputPortSerializable<T>   input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple)

@@ -48,6 +48,8 @@ import scala.reflect.ClassTag
 //  data
 //
 //}
+
+
   override def treeAggregate[U: ClassTag](zeroValue: U)(
     seqOp: (U, T) => U,
     combOp: (U, U) => U,
@@ -72,8 +74,8 @@ import scala.reflect.ClassTag
 //        (i, iter) => iter.map((i % curNumPartitions, _))
 //      }.reduceByKey(new HashPartitioner(curNumPartitions), cleanCombOp).values
 //    }
-    partiallyAggregated.reduce(cleanCombOp)
-  }
+     partiallyAggregated.reduce(cleanCombOp)
+}
 
 //  override def take(num: Int): Array[T] = {
 //    println(num)
@@ -108,7 +110,6 @@ import scala.reflect.ClassTag
 
   override protected def getPartitions: Array[Partition] = ???
 }
-object ScalaApexRDD extends {
-
+object ScalaApexRDD {
 
 }

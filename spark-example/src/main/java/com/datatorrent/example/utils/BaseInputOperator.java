@@ -20,12 +20,15 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     public BaseInputOperator(){
 
     }
-    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
-    public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
 
+    @Override
     public DefaultInputPortSerializable<T> getInputPort() {
         return null;
     }
+
+    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
+    public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
+
 
     public DefaultOutputPortSerializable getOutputPort() {
         return output;

@@ -1,11 +1,10 @@
 package com.datatorrent.example.algorithmtest
 
-import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression
-import org.apache.spark.mllib.regression.{LabeledPoint, LinearRegressionWithSGD}
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -131,8 +130,8 @@ object MLlibAlgorithmTest {
     val conf = new SparkConf().setAppName("AlgorithmTEST").setMaster("local")
     val sc = new SparkContext(conf)
     val data=new ArrayBuffer[(Double,Double)]
-    for(a<- 1 to 50)
-      data+=testLogisticRegression(sc)
+//    for(a<- 1 to 50)
+    println(testLogisticRegression(sc))
     println(data)
   }
   //    Logistic Regression
@@ -142,7 +141,5 @@ object MLlibAlgorithmTest {
   //    LinearSVM
   //    Spark:- Area under ROC = 0.7174120795107028
   //    Apex:- Area under ROC = 0.5
-  val conf = new SparkConf().setAppName("Algorithm TEST").setMaster("local")
-  val sc = new SparkContext(conf)
-  testLinearRegression(sc)
+
 }

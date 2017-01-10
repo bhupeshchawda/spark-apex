@@ -20,12 +20,12 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
     PrintWriter out;
     Logger log = LoggerFactory.getLogger(CollectOperator.class);
     public CollectOperator(){}
-    public static ArrayList<Object> t;
+    public static ArrayList<Object> dataList;
     public DefaultInputPortSerializable<T> input = new DefaultInputPortSerializable<T>() {
         @Override
         public void process(T tuple) {
             log.info("Type of tuple: {}, ",tuple.getClass());
-            t.add(tuple);
+            dataList.add(tuple);
             count++;
         }
     };
@@ -33,7 +33,7 @@ public class CollectOperator<T> extends BaseOperator implements Serializable {
     @Override
     public void setup(Context.OperatorContext context) {
         try {
-            t=new ArrayList<>();
+            dataList=new ArrayList<>();
             fw= new FileWriter("/tmp/collectedData",true);
             bw= new BufferedWriter(fw);
 
