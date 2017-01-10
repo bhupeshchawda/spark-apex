@@ -2,11 +2,14 @@ package com.datatorrent.example.utils;
 
 import com.datatorrent.api.Context.OperatorContext;
 import com.datatorrent.api.DefaultInputPort;
+import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.common.util.BaseOperator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -19,11 +22,11 @@ public class FileWriterOperator extends BaseOperator
     OutputStream os;
     boolean shutDown= false;
     public String absoluteFilePath = "hdfs://localhost:54310";
+    public String appName="";
 
     public FileWriterOperator()
     {
     }
-
     public final transient DefaultInputPort<Object> input = new DefaultInputPort<Object>()
     {
         @Override
@@ -65,27 +68,30 @@ public class FileWriterOperator extends BaseOperator
             }
         }
     };
-
     @Override
     public void endWindow() {
         super.endWindow();
-        if(shutDown){
+        if(shutDown) {
             Configuration configuration = new Configuration();
-        try {
-            hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
+            try {
+                hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
 
-            Path file = new Path("hdfs://localhost:54310/harsh/chi/success/ChiReduceSuccess");
-            if (hdfs.exists(file)) {
-                hdfs.delete(file, true);
+                Path file = new Path("hdfs://localhost:54310/harsh/chi/success/Chi"+appName+"Success");
+                if (hdfs.exists(file)) {
+                    hdfs.delete(file, true);
+                }
+                os = hdfs.create(file);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            os = hdfs.create(file);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        }
+
     }
+
+
+
 
     public void setAbsoluteFilePath(String absoluteFilePath)
     {

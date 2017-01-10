@@ -48,7 +48,7 @@ public class ReduceOperator<T> extends MyBaseOperator implements Serializable
           previousValue = tuple;
           finalValue = f.apply(finalValue, previousValue);
       }
-      log.info("ReduceOperator operator ID {}",ID);
+      //log.info("ReduceOperator operator ID {}",ID);
 
 
     }

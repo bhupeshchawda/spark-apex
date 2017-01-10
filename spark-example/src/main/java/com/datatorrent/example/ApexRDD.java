@@ -8,7 +8,8 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
@@ -31,7 +32,12 @@ import scala.collection.Map;
 import scala.math.Ordering;
 import scala.reflect.ClassTag;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -55,12 +61,37 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
 
 
+
     public ApexRDD(ApexContext ac) {
         super(ac.emptyRDD((ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class)), (ClassTag<T>) scala.reflect.ClassManifestFactory.fromClass(Object.class));
         context= ac;
         dag = new MyDAG();
     }
 
+    public void successTracker(String appName){
+        FileSystem hdfs = null;
+        try {
+            Configuration configuration = new Configuration();
+            hdfs = FileSystem.get(new URI("hdfs://localhost:54310"),configuration);
+            Path file = new Path("/harsh/chi/success/Chi"+appName+"Success");
+            while (true){
+                if (hdfs.exists(file)) {
+                    hdfs.delete(file,true);
+                        return;
+                }
+                System.out.println("searching for success file");
+                Thread.sleep(4000);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+
+        return ;
+    }
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
         this.dag=((ApexRDD<T>)rdd).dag;
@@ -100,11 +131,14 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         }
         return currentOperator.getOutputPort();
     }
+
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
         BaseInputOperator currentOperator= (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
-
+    public BaseInputOperator getBaseInputOperator(MyDAG cloneDag){
+        return (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+    }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
@@ -159,6 +193,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         controlOutput= getControlOutput(cloneDag);
         ReduceOperator reduceOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Reduce " , new ReduceOperator());
+        getBaseInputOperator(cloneDag).appName=reduceApp;
         //cloneDag.setInputPortAttribute(reduceOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         reduceOperator.f = context.clean(f,true);
 
@@ -169,12 +204,10 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/outputData");
-
+        writer.appName=reduceApp;
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
-
         cloneDag.validate();
         log.info("DAG successfully validated");
-
         GenericApplication app = new GenericApplication();
         app.setDag(cloneDag);
         ApexDoTask apexDoTask = new ApexDoTask();
@@ -183,7 +216,10 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        successTracker(reduceApp);
+
         Integer reduce = fileReader("hdfs://localhost:54310/harsh/chi/outputData");
+
         return (T) reduce;
     }
 
@@ -255,8 +291,8 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
             try {
                 if (br != null)
                     br.close();
-                hdfs.close();
                 ois.close();
+                hdfs.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -313,13 +349,15 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public T first() {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        FirstOpertaor firstOpertaor = cloneDag.addOperator(System.currentTimeMillis()+" FirstOperator",FirstOpertaor.class);
-        //cloneDag.setInputPortAttribute(firstOpertaor.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        cloneDag.addStream(System.currentTimeMillis()+"FirstTupleStream",currentOutputPort,firstOpertaor.input);
+        FirstOperator firstOperator = cloneDag.addOperator(System.currentTimeMillis()+" FirstOperator",FirstOperator.class);
+        getBaseInputOperator(cloneDag).appName=firstApp;
+        //cloneDag.setInputPortAttribute(firstOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+"FirstTupleStream",currentOutputPort, firstOperator.input);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/outputDataFirst");
-        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", firstOpertaor.output, writer.input);
+        writer.appName=firstApp;
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", firstOperator.output, writer.input);
         cloneDag.validate();
         log.info("DAG successfully validated");
 
@@ -331,7 +369,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        successTracker(firstApp);
         String first = SfileReader("hdfs://localhost:54310/harsh/chi/outputDataFirst");
+
         T a= (T) LabeledPoint$.MODULE$.parse(first);
         return a;
     }
@@ -381,13 +421,17 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     public Map<T, Object> countByValue(Ordering<T> ord) {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
-        CountByVlaueOperator countByVlaueOperator =cloneDag.addOperator(System.currentTimeMillis()+" CountByVlaueOperator",CountByVlaueOperator.class);
-        cloneDag.addStream(System.currentTimeMillis()+" CountValue Stream",currentOutputPort,countByVlaueOperator.getInputPort());
-        //cloneDag.setInputPortAttribute(countByVlaueOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        CountByVlaueOperator countByVlaueOperator =cloneDag.addOperator(System.currentTimeMillis()+"" +
+                " CountByVlaueOperator",CountByVlaueOperator.class);
         controlOutput= getControlOutput(cloneDag);
+        cloneDag.addStream(System.currentTimeMillis()+" CountValue Stream",currentOutputPort,countByVlaueOperator.getInputPort());
+        getBaseInputOperator(cloneDag).appName=countByValueApp;
+        //cloneDag.setInputPortAttribute(countByVlaueOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countByVlaueOperator.controlDone);
         ObjectFileWriterOperator fileWriterOperator=cloneDag.addOperator(System.currentTimeMillis()+ "WriteMap ",new ObjectFileWriterOperator());
         fileWriterOperator.setAbsoluteFilePath("/harsh/chi/countByValueOutput");
+        fileWriterOperator.appName=countByValueApp;
         cloneDag.addStream(System.currentTimeMillis()+" MapWrite", countByVlaueOperator.output, fileWriterOperator.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
@@ -400,6 +444,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        successTracker(countByValueApp);
 
         HashMap hashMap= ObjectReader("hdfs://localhost:54310/harsh/chi/countByValueOutput");
         Map<T, Object> map = this.scalaMap(hashMap);
@@ -436,12 +481,14 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         ForeachOpeator foreach = cloneDag.addOperator(System.currentTimeMillis()+" ForEachOperator",new ForeachOpeator());
+        getBaseInputOperator(cloneDag).appName=forEachApp;
 
         foreach.f= function;
         cloneDag.addStream(System.currentTimeMillis()+" ForEachStream", currentOutputPort, foreach.input);
         SimpleFileWriteOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", new SimpleFileWriteOperator());
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/filteredData");
+        writer.appName=forEachApp;
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", foreach.output, writer.input);
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
@@ -454,6 +501,8 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        successTracker(forEachApp);
+        System.out.println("All dags launched Successfully...");
     }
 
 

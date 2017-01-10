@@ -19,7 +19,8 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
     public SimpleFileWriteOperator(){}
     Configuration configuration;
     OutputStream os;
-    boolean closeStreams=false;
+    public String appName="";
+    boolean closeStreams=false,shutDown=false;
     private FileSystem hdfs;
     public String absoluteFilePath = "hdfs://localhost:54310";
 
@@ -62,6 +63,23 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
         closeStreams = true;
+        if(shutDown)
+        {
+            Configuration configuration = new Configuration();
+            try {
+                hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
+
+                Path file = new Path("hdfs://localhost:54310/harsh/chi/success/Chi"+appName+"Success");
+                if (hdfs.exists(file)) {
+                    hdfs.delete(file, true);
+                }
+                os = hdfs.create(file);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -71,6 +89,7 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
             try {
                 bw.close();
                 hdfs.close();
+                shutDown=true;
             } catch (IOException e) {
                 e.printStackTrace();
             }

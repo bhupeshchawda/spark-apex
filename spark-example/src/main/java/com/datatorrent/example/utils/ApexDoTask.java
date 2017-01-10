@@ -19,8 +19,8 @@ public class ApexDoTask {
         conf.set("dt.dfsRootDirectory","/tmp");
         conf.set("fs.defaultFS", "hdfs://localhost:54310");
         conf.set("yarn.resourcemanager.address", "http://localhost:8032");
-        conf.set("yarn.scheduler.maximum-allocation-mb","4096");
-        conf.set("yarn.nodemanager.resource.memory-mb","4096");
+        /*conf.set("yarn.scheduler.maximum-allocation-mb","4096");
+        conf.set("yarn.nodemanager.resource.memory-mb","4096");*/
         conf.addResource(new File("/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/mem.xml").toURI().toURL());
         //conf.addResource(new File(System.getProperty("$HOME/.dt/dt-site.xml")).toURI().toURL());
 

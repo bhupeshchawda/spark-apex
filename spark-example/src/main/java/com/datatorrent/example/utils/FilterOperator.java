@@ -20,7 +20,7 @@ public class FilterOperator extends MyBaseOperator implements Serializable
     {
       if((Boolean) f.apply(tuple)) {
         output.emit(tuple);
-        log.info("Function applied on tuple {} of OperatorID {} in Filter",tuple,ID);
+        //log.info("Function applied on tuple {} of OperatorID {} in Filter",tuple,ID);
       }
     }
   };

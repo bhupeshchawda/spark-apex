@@ -14,21 +14,26 @@ import java.util.HashMap;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Serializable {
+    private boolean done = false;
 
     public CountByVlaueOperator() {
 
     }
-    boolean doEmit=false,doEnable;
     @Override
     public void beginWindow(long windowId) {
         super.beginWindow(windowId);
-        doEmit=true;
+        if(done)
+        {
+            log.info("control done is here");
+            output.emit(hashMap);
+        }
     }
 
     public final  DefaultInputPortSerializable<Boolean> controlDone = new DefaultInputPortSerializable<Boolean>() {
         @Override
         public void process(Boolean tuple)
         {
+            log.info("control done is true");
             done = true;
         }
     };
@@ -39,13 +44,11 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     public void setup(Context.OperatorContext context) {
         super.setup(context);
         hashMap= new HashMap<>();
-        doEnable=true;
     }
     public DefaultInputPortSerializable input = new DefaultInputPortSerializable() {
         @Override
         public void process(Object tuple) {
             {
-                doEmit=false;
                 if(hashMap.containsKey(tuple)) {
                     long x= hashMap.get(tuple).longValue();
                     hashMap.put(tuple, new Long(x+1));
@@ -60,9 +63,6 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     @Override
     public void endWindow() {
         super.endWindow();
-        if(doEnable)
-            if(doEmit)
-                output.emit(hashMap);
     }
 
     public DefaultOutputPortSerializable<HashMap> output = new DefaultOutputPortSerializable<HashMap>();
@@ -70,7 +70,7 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     public DefaultInputPortSerializable<Object> getInputPort() {
         return input;
     }
-    private boolean done = false;
+
 
 
     @Override
