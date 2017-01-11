@@ -41,5 +41,15 @@
             <artifactId>malhar-library</artifactId>
             <version>3.5.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.alluxio</groupId>
+            <artifactId>alluxio-core-common</artifactId>
+            <version>RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.alluxio</groupId>
+            <artifactId>alluxio-core-client</artifactId>
+            <version>RELEASE</version>
+        </dependency>
     </dependencies>
 </project>

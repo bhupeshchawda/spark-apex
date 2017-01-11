@@ -16,7 +16,7 @@ import scala.reflect.ClassTag;
 /**
  * Created by anurag on 19/12/16.
  */
-public class LogisticRegressionTest {
+public class    LogisticRegressionTest {
     public static  void main(String [] args){
         SparkContext sc= new SparkContext(new SparkConf().setMaster("local[2]").setAppName("Kmeans"));
         String path = "/home/anurag/spark-master/data/mllib/sample_libsvm_data.txt";

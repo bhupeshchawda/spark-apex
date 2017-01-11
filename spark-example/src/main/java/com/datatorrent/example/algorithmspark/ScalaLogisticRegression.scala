@@ -21,20 +21,6 @@ object ScalaLogisticRegression {
     val splits = data2.randomSplit(Array(0.6, 0.4), seed = 11L)
     val training = splits(0).cache()
     val test = splits(1)
-
-//    val data=training.map(_.features)
-//
-//    val summary=data.treeAggregate(new MultivariateOnlineSummarizer)(
-//      (aggregator, data) => aggregator.add(data),
-//      (aggregator1, aggregator2) => aggregator1.merge(aggregator2))
-//    new StandardScalerModel(
-//      Vectors.dense(summary.variance.toArray.map(v => math.sqrt(v))),
-//      summary.mean,
-//      true,
-//      false)
-//    println(summary.variance)
-//    assert(false)
-    // Run training algorithm to build the model
     val model = new LogisticRegressionWithLBFGS()
       .setNumClasses(10)
       .run(data2)

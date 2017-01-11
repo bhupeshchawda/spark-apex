@@ -1,29 +1,45 @@
 package com.datatorrent.example.utils;
 
+import alluxio.AlluxioURI;
+import alluxio.client.file.FileOutStream;
+import alluxio.exception.AlluxioException;
 import com.datatorrent.api.Context.OperatorContext;
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.common.util.BaseOperator;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
 import org.apache.hadoop.fs.FileSystem;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 
 public class FileWriterOperator extends BaseOperator
 {
     private BufferedWriter bw;
     private String absoluteFilePath;
     private FileSystem hdfs;
-    private Kryo kryo;
-    private Output output;
     //  private String absoluteFilePath = "hdfs://localhost:54310/tmp/spark-apex/output";
     public FileWriterOperator()
     {
     }
-    public synchronized  static void writeToFile(String path,Object o) throws IOException {
+    public static void writeFileToAlluxio(String path,Object o) throws IOException, AlluxioException {
+        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+        AlluxioURI pathURI=new AlluxioURI(path);
+        if(fs.exists(pathURI))
+            fs.delete(pathURI);
+        FileOutStream outStream = fs.createFile(pathURI);
+
+        ObjectOutputStream oos = new ObjectOutputStream(outStream);
+        oos.writeObject(o);
+        oos.close();
+        outStream.close();
+        pathURI=new AlluxioURI("/_SUCCESS");
+        outStream =fs.createFile(pathURI);
+        DataOutputStream ds = new DataOutputStream(outStream);
+        ds.write("Success File Created".getBytes());
+
+    }
+    public synchronized static void writeFileToHDFS(String path,Object o){
+
+    }
+    public synchronized  static void writeFileToLocal(String path,Object o) throws IOException {
         FileOutputStream fos = new FileOutputStream(path);
         ObjectOutputStream oos = new ObjectOutputStream(fos);
         oos.writeObject(o);
@@ -61,9 +77,11 @@ public class FileWriterOperator extends BaseOperator
 
             try {
 
-                writeToFile(absoluteFilePath, tuple);
+                writeFileToAlluxio(absoluteFilePath, tuple);
             } catch (IOException e) {
                 throw new RuntimeException(e);
+            } catch (AlluxioException e) {
+                e.printStackTrace();
             }
         }
     };

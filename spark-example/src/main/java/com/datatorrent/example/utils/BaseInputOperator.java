@@ -1,18 +1,23 @@
 package com.datatorrent.example.utils;
 
+import alluxio.AlluxioURI;
+import alluxio.client.file.FileInStream;
+import alluxio.exception.AlluxioException;
 import com.datatorrent.api.Context;
 import com.datatorrent.api.InputOperator;
 import com.datatorrent.example.MyBaseOperator;
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 
 /**
  * Created by harsh on 2/12/16.
  */
-
+@DefaultSerializer(JavaSerializer.class)
 public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOperator,Serializable {
     private BufferedReader br;
     public String path;
@@ -21,15 +26,13 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
 
     }
 
+
+
+    public   DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<>();
+    public   DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
+
     @Override
-    public DefaultInputPortSerializable<T> getInputPort() {
-        return null;
-    }
-
-    public final transient DefaultOutputPortSerializable<String> output = new DefaultOutputPortSerializable<String>();
-    public final transient DefaultOutputPortSerializable<Boolean> controlOut = new DefaultOutputPortSerializable<Boolean>();
-
-
+    public DefaultInputPortSerializable<T> getInputPort() {return null;}
     public DefaultOutputPortSerializable getOutputPort() {
         return output;
     }
@@ -50,6 +53,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
 
             }
             else {
+
                 sent=true;
             }
         }
@@ -57,10 +61,25 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
 
         }
     }
+    public  boolean successFileExists() throws IOException, AlluxioException {
+        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+        AlluxioURI pathURI=new AlluxioURI("/_SUCCESS");
+        return fs.exists(pathURI);
+
+    }
     @Override
     public void beginWindow(long windowId) {
-        super.beginWindow(windowId);
         if(sent){
+            try {
+                if(successFileExists())
+                    throw new ShutdownException();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (AlluxioException e) {
+                e.printStackTrace();
+            }
+
+
             controlOut.emit(true);
         }
     }
@@ -70,8 +89,14 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
         super.setup(context);
         try{
 //            Path pt=new Path("file:///home/anurag/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt");
-            FileInputStream fs = new FileInputStream(path);
-            br=new BufferedReader(new InputStreamReader(fs));
+//            Configuration conf = new Configuration();
+//            Path pt=new Path(path);
+//            FileSystem hdfs = FileSystem.get(pt.toUri(), conf);
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI=new AlluxioURI(path);
+            FileInStream inStream = fs.openFile(pathURI);
+            br=new BufferedReader(new InputStreamReader(inStream));
+
 
 
         }catch(Exception e){
