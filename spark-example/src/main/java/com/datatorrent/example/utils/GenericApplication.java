@@ -5,18 +5,20 @@ package com.datatorrent.example.utils;
 */
 
 
-import com.datatorrent.api.Context;
-import com.datatorrent.api.DAG;
-import com.datatorrent.api.Operator;
+import com.datatorrent.api.*;
 import com.datatorrent.api.Operator.InputPort;
 import com.datatorrent.api.Operator.OutputPort;
-import com.datatorrent.api.StreamingApplication;
+import com.datatorrent.common.partitioner.StatelessPartitioner;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.logical.LogicalPlan.InputPortMeta;
 import com.datatorrent.stram.plan.logical.LogicalPlan.OperatorMeta;
 import com.datatorrent.stram.plan.logical.LogicalPlan.StreamMeta;
 import org.apache.hadoop.conf.Configuration;
+
+import java.util.HashMap;
+
+import static com.datatorrent.api.Context.OperatorContext.PARTITIONER;
 
 public class GenericApplication implements StreamingApplication
 {
@@ -26,11 +28,14 @@ public class GenericApplication implements StreamingApplication
     {
         this.dag = dag;
     }
-
+    private Attribute.AttributeMap hashMap;
     public void populateDAG(DAG dag, Configuration conf) {
         for (OperatorMeta o : this.dag.getAllOperators()) {
             dag.addOperator(o.getName(), o.getOperator());
+            if(o.getAttributes().contains(PARTITIONER))
+                dag.setAttribute(o.getOperator(),PARTITIONER,o.getAttributes().get(PARTITIONER));
         }
+
         for (StreamMeta s : this.dag.getAllStreams()) {
             for (InputPortMeta i : s.getSinks()) {
                 Operator.OutputPort<Object> op = (OutputPort<Object>) s.getSource().getPortObject();
