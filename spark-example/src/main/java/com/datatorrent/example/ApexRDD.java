@@ -1,11 +1,20 @@
 package com.datatorrent.example;
 
+import alluxio.AlluxioURI;
+import alluxio.client.file.*;
+import alluxio.client.file.FileSystem;
+import alluxio.exception.AlluxioException;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.example.apexscala.ApexPartition;
 import com.datatorrent.example.apexscala.ScalaApexRDD;
 import com.datatorrent.example.utils.*;
+import com.datatorrent.stram.client.StramAppLauncher;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
 import org.apache.spark.SparkContext;
@@ -24,13 +33,11 @@ import scala.Option;
 import scala.collection.Iterator;
 import scala.reflect.ClassTag;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Properties;
 import java.util.Random;
 
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
@@ -155,7 +162,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
 //        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"Collect DAG");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         T[] array= (T[]) CollectOperator.t.toArray();
 
         return array;
@@ -254,7 +265,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         writer.setAbsoluteFilePath("/tmp/outputData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"Reduce Dag");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return (T) ReduceOperator.finalValue;
     }
 
@@ -286,7 +301,12 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/tmp/outputDataCount");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
-        runDag(cloneDag,3000);
+        try {
+            runDag(cloneDag,3000,"Count DAG");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         Integer count = fileReader("/tmp/outputDataCount");
         if(count==null)
             return 0L;
@@ -341,7 +361,93 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         apexRDDClone.dag =cloneDag;
         return apexRDDClone;
     }
-    public void runDag(MyDAG cloneDag,long runMillis){
+
+    public String getProperty(String prop){
+        Properties properties = new Properties();
+        InputStream input ;
+        try{
+            input = new FileInputStream("/home/krushika/dev/spark-apex/spark-example/src/main/java/com/datatorrent/example/properties/svm.properties");
+            properties.load(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties.getProperty(prop);
+    }
+    public void runDag(MyDAG cloneDag,long runMillis,String name) throws Exception {
+        cloneDag.validate();
+        String jars = getProperty("jars");
+        log.debug("DAG successfully validated");
+        Configuration conf = new Configuration(true);
+        conf.set("fs.defaultFS","hdfs://localhost:54310");
+        conf.set("yarn.resourcemanager.address", "localhost:8032");
+        conf.addResource(new File("/home/krushika/dev/spark-apex/spark-example/src/main/resources/properties.xml").toURI().toURL());
+        conf.set(StramAppLauncher.LIBJARS_CONF_KEY_NAME,jars);
+        GenericApplication app = new GenericApplication();
+        app.setDag(cloneDag);
+
+        YarnConfiguration conf2 = new YarnConfiguration();
+        YarnClient c = YarnClient.createYarnClient();
+        c.init(conf);
+        c.start();
+
+        StramAppLauncher appLauncher = new StramAppLauncher(name, conf);
+        appLauncher.loadDependencies();
+        StreamingAppFactory appFactory = new StreamingAppFactory(app, name);
+
+
+        ApplicationId id = appLauncher.launchApp(appFactory);
+        while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        c.killApplication(id);
+        deleteJars(id.toString());
+        log.info(" Address {}",conf2.get("yarn.resourcemanager.address"));
+
+    }
+    public void deleteJars(String path){
+        Configuration conf = new Configuration();
+        Path pt=new Path("hdfs://localhost:54310/user/krushika/datatorrent/apps/"+path);
+        org.apache.hadoop.fs.FileSystem hdfs = null;
+        try {
+            hdfs = org.apache.hadoop.fs.FileSystem.get(pt.toUri(), conf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            hdfs.delete(pt, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        log.info("Deleted jars from {}",path);
+    }
+    public synchronized void deleteSUCCESSFile() {
+        try {
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI=new AlluxioURI("/user/krushika/spark-apex/_SUCCESS");
+            if(fs.exists(pathURI)) fs.delete(pathURI);
+
+        } catch (IOException | AlluxioException e) {
+            e.printStackTrace();
+        }
+
+    }
+    public  boolean successFileExists(){
+
+        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+        AlluxioURI pathURI=new AlluxioURI("/user/krushika/spark-apex/_SUCCESS");
+        try {
+            return fs.exists(pathURI);
+        } catch (IOException | AlluxioException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+    public void runDagLocal(MyDAG cloneDag,long runMillis,String name) {
         cloneDag.validate();
         log.debug("DAG successfully validated");
         LocalMode lma = LocalMode.newInstance();
@@ -355,8 +461,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         }
         LocalMode.Controller lc = lma.getController();
         lc.run(runMillis);
-
     }
+
     public enum OperatorType {
         INPUT,
         PROCESS,

@@ -1,0 +1,6 @@
+<configuration>
+    <property>
+        <name>dt.operator.*.attr.MEMORY_MB</name>
+        <value>128</value>
+    </property>
+</configuration>

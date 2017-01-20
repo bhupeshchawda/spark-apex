@@ -1,21 +1,19 @@
 package com.datatorrent.example.algorithmspark.javaexamples.pexlinearregression;
+import alluxio.AlluxioURI;
+import alluxio.client.file.FileInStream;
+import alluxio.client.file.FileOutStream;
+import alluxio.client.file.FileSystem;
+
+import alluxio.exception.AlluxioException;
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import scala.Tuple2;
-
-import org.apache.spark.api.java.*;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.regression.LinearRegressionModel;
 import org.apache.spark.mllib.regression.LinearRegressionWithSGD;
-import org.apache.spark.SparkConf;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 /**
@@ -23,7 +21,7 @@ import java.util.Properties;
  */
 public class LinearRegressionTrain {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, AlluxioException {
         Properties properties = new Properties();
         InputStream input ;
         try{
@@ -38,7 +36,7 @@ public class LinearRegressionTrain {
 
 
         // Load and parse the data
-        String path = "/home/krushika/dev/spark-apex/spark-example/src/main/resources/data/lpsa.data";
+        String path = properties.getProperty("LinearRegressionTrainData");
         ApexRDD<String> data = (ApexRDD<String>) sc.textFile(path,1);
         ApexRDD<LabeledPoint> parsedData = (ApexRDD<LabeledPoint>) data.map(
                 new Function<String, LabeledPoint>() {
@@ -58,8 +56,15 @@ public class LinearRegressionTrain {
         final LinearRegressionModel model =
                 LinearRegressionWithSGD.train(parsedData, numIterations);
 
-        model.toPMML(sc,"target/tmp/PMMLModelLinear");
+//        FileSystem fs = FileSystem.Factory.get();
+//        AlluxioURI pathAlluxio = new AlluxioURI("/PMMLModelLinear");
+//        FileOutStream out = fs.createFile(pathAlluxio);
+//        DataOutputStream ds = new DataOutputStream(out);
+//        ds.writeChars(model.toPMML());
+//        ds.close();
+//        out.close();
         model.save(sc, properties.getProperty("LinearRegressionModelPath"));
+
 
 
     }
