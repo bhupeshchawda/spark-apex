@@ -52,9 +52,9 @@ public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Se
         }
     }
 
-    public DefaultInputPortSerializable<HashMap> input =  new DefaultInputPortSerializable<HashMap>() {
+    public DefaultInputPortSerializable<Object> input =  new DefaultInputPortSerializable<Object>() {
         @Override
-        public void process(HashMap tuple) {
+        public void process(Object tuple) {
             try {
                 configuration = new Configuration();
                 try {

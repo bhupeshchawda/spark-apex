@@ -173,7 +173,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         MyDAG cloneDag = (MyDAG) SerializationUtils.clone(dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         FilterOperator filterOperator = cloneDag.addOperator(System.currentTimeMillis()+ " Filter", FilterOperator.class);
-        cloneDag.setAttribute(filterOperator,PARTITIONER, new StatelessPartitioner<ReduceOperator>(apexRDDPartitioner.numPartitions()));
+        //cloneDag.setAttribute(filterOperator,PARTITIONER, new StatelessPartitioner<ReduceOperator>(apexRDDPartitioner.numPartitions()));
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
         ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
@@ -203,7 +203,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         Assert.assertTrue(currentOutputPort != null);
         cloneDag.addStream(System.currentTimeMillis()+" Reduce Input Stream", currentOutputPort, reduceOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, reduceOperator.controlDone);
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        ObjectFileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", ObjectFileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/outputData");
         writer.appName=reduceApp;
@@ -226,39 +226,16 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     }
 
     public static Integer fileReader(String path){
-        BufferedReader br = null;
+        //BufferedReader br = null;
+        ObjectInputStream ois=null;
         FileSystem hdfs=null;
         try{
             Configuration conf = new Configuration();
             Path pt=new Path(path);
             hdfs = FileSystem.get(pt.toUri(), conf);
-            br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
-            String line = br.readLine();
-            while (line!=null)
-                return Integer.valueOf(line);
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        finally {
-            try{
-                if(br!=null)
-                    br.close();
-                    hdfs.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-    public static String SfileReader(String path){
-        BufferedReader br = null;
-        FileSystem hdfs=null;
-        try{
-            Configuration conf = new Configuration();
-            Path pt=new Path(path);
-            hdfs = FileSystem.get(pt.toUri(), conf);
-            br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
-            String line = br.readLine();
+            ois = new ObjectInputStream(hdfs.open(pt));
+            //br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
+            Integer line = (Integer) ois.readObject();
             while (line!=null)
                 return line;
         }catch(Exception e){
@@ -266,8 +243,35 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         }
         finally {
             try{
-                if(br!=null)
-                    br.close();
+                if(ois!=null)
+                    ois.close();
+                    hdfs.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+    public static LabeledPoint SfileReader(String path){
+        //BufferedReader br = null;
+        ObjectInputStream ois=null;
+        FileSystem hdfs=null;
+        try{
+            Configuration conf = new Configuration();
+            Path pt=new Path(path);
+            hdfs = FileSystem.get(pt.toUri(), conf);
+            ois = new ObjectInputStream(hdfs.open(pt));
+            //br=new BufferedReader(new InputStreamReader(hdfs.open(pt)));
+            LabeledPoint line = (LabeledPoint) ois.readObject();
+            while (line!=null)
+                return line;
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        finally {
+            try{
+                if(ois!=null)
+                    ois.close();
                 hdfs.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -275,6 +279,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         }
         return null;
     }
+
     public static HashMap ObjectReader(String path){
         BufferedReader br = null;
         FileSystem hdfs=null;
@@ -326,7 +331,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         //cloneDag.setInputPortAttribute(countOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Count Input Stream", currentCountOutputPort, countOperator.input);
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        ObjectFileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", ObjectFileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/outputDataCount");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
@@ -355,7 +360,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         getBaseInputOperator(cloneDag).appName=firstApp;
         //cloneDag.setInputPortAttribute(firstOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+"FirstTupleStream",currentOutputPort, firstOperator.input);
-        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        ObjectFileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", ObjectFileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         writer.setAbsoluteFilePath("/harsh/chi/outputDataFirst");
         writer.appName=firstApp;
@@ -372,9 +377,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
             e.printStackTrace();
         }
         successTracker(firstApp);
-        String first = SfileReader("hdfs://localhost:54310/harsh/chi/outputDataFirst");
+        LabeledPoint first = SfileReader("hdfs://localhost:54310/harsh/chi/outputDataFirst");
 
-        T a= (T) LabeledPoint$.MODULE$.parse(first);
+        T a= (T) first;
         return a;
     }
 
@@ -492,7 +497,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         writer.setAbsoluteFilePath("/harsh/chi/filteredData");
         writer.appName=forEachApp;
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", foreach.output, writer.input);
-        cloneDag.setAttribute(foreach,PARTITIONER, new StatelessPartitioner<ForeachOpeator>(apexRDDPartitioner.numPartitions()));
+        //cloneDag.setAttribute(foreach,PARTITIONER, new StatelessPartitioner<ForeachOpeator>(apexRDDPartitioner.numPartitions()));
         cloneDag.validate();
         log.info("DAG successfully validated CountByValue");
 
