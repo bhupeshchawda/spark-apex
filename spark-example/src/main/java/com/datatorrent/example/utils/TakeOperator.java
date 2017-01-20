@@ -16,8 +16,8 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
     private boolean emitted;
 
     public TakeOperator(){}
-    public static ArrayList<Object> elements ;
-    public static  int count;
+    public  ArrayList<Object> elements ;
+    public  int count;
 
     @Override
     public void setup(Context.OperatorContext context) {

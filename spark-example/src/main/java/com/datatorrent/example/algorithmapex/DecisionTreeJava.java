@@ -3,8 +3,8 @@ package com.datatorrent.example.algorithmapex;
 import com.datatorrent.example.ApexConf;
 import com.datatorrent.example.ApexContext;
 import com.datatorrent.example.ApexRDD;
-import com.datatorrent.example.apexscala.DecisionTreeApex;
 import com.datatorrent.example.apexscala.AlgorithmTest;
+import com.datatorrent.example.apexscala.DecisionTreeApex;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.util.MLUtils;
@@ -16,6 +16,7 @@ import java.util.HashMap;
  * Created by anurag on 27/12/16.
  */
 public class DecisionTreeJava {
+
     public static void main(String args[]) {
         ApexConf apexConf = new ApexConf().setMaster("local[2]").setAppName("JavaDecisionTreeClassificationExample");
         ApexContext ac = new ApexContext(apexConf);

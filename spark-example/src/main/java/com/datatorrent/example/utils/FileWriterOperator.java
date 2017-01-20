@@ -2,42 +2,49 @@ package com.datatorrent.example.utils;
 
 import alluxio.AlluxioURI;
 import alluxio.client.file.FileOutStream;
+import alluxio.client.file.FileSystem;
 import alluxio.exception.AlluxioException;
 import com.datatorrent.api.Context.OperatorContext;
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.common.util.BaseOperator;
-import org.apache.hadoop.fs.FileSystem;
 
 import java.io.*;
+
+//import org.apache.hadoop.fs.FileSystem;
 
 public class FileWriterOperator extends BaseOperator
 {
     private BufferedWriter bw;
     private String absoluteFilePath;
-    private FileSystem hdfs;
+    public String successFilePath;
+//    private FileSystem hdfs;
     //  private String absoluteFilePath = "hdfs://localhost:54310/tmp/spark-apex/output";
     public FileWriterOperator()
     {
     }
-    public static void writeFileToAlluxio(String path,Object o) throws IOException, AlluxioException {
-        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
-        AlluxioURI pathURI=new AlluxioURI(path);
-        if(fs.exists(pathURI))
+    public synchronized void createSuccessFile() throws IOException, AlluxioException {
+        FileSystem fs = FileSystem.Factory.get();
+        AlluxioURI pathURI = new AlluxioURI("/user/anurag/spark-apex/_SUCCESS");
+        FileOutStream outStream = fs.createFile(pathURI);
+        DataOutputStream ds = new DataOutputStream(outStream);
+        ds.write("Success File Created".getBytes());
+        ds.close();
+        outStream.close();
+
+    }
+    public synchronized  void writeFileToAlluxio(String path,Object o) throws IOException, AlluxioException {
+        FileSystem fs = FileSystem.Factory.get();
+        AlluxioURI pathURI = new AlluxioURI("/user/anurag/spark-apex/"+path);
+        if (fs.exists(pathURI))
             fs.delete(pathURI);
         FileOutStream outStream = fs.createFile(pathURI);
-
         ObjectOutputStream oos = new ObjectOutputStream(outStream);
         oos.writeObject(o);
         oos.close();
         outStream.close();
-        pathURI=new AlluxioURI("/_SUCCESS");
-        outStream =fs.createFile(pathURI);
-        DataOutputStream ds = new DataOutputStream(outStream);
-        ds.write("Success File Created".getBytes());
-
+        createSuccessFile();
     }
     public synchronized static void writeFileToHDFS(String path,Object o){
-
     }
     public synchronized  static void writeFileToLocal(String path,Object o) throws IOException {
         FileOutputStream fos = new FileOutputStream(path);
@@ -74,13 +81,13 @@ public class FileWriterOperator extends BaseOperator
         @Override
         public void process(Object tuple)
         {
-
             try {
-
-                writeFileToAlluxio(absoluteFilePath, tuple);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (AlluxioException e) {
+                System.out.println("Writing to file");
+                if(!isSerialized) {
+                    writeFileToAlluxio(absoluteFilePath, tuple);
+                    isSerialized=true;
+                }
+            } catch (IOException | AlluxioException e) {
                 e.printStackTrace();
             }
         }
@@ -90,7 +97,9 @@ public class FileWriterOperator extends BaseOperator
     public void endWindow() {
 
     }
-
+    public void setSuccessFilePath(String path){
+        this.successFilePath=path;
+    }
     public void setAbsoluteFilePath(String absoluteFilePath)
     {
         this.absoluteFilePath = absoluteFilePath;

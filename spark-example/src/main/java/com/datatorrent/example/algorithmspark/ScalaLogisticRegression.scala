@@ -18,9 +18,7 @@ object ScalaLogisticRegression {
     val data2 = MLUtils.loadLibSVMFile(sc, path )
 
     // Split data into training (60%) and test (40%).
-    val splits = data2.randomSplit(Array(0.6, 0.4), seed = 11L)
-    val training = splits(0).cache()
-    val test = splits(1)
+//    val splits = data2.randomSplit(Array(0.6, 0.4), seed = 11L)
     val model = new LogisticRegressionWithLBFGS()
       .setNumClasses(10)
       .run(data2)

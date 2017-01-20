@@ -10,7 +10,10 @@ import com.datatorrent.example.utils.*;
 import com.datatorrent.stram.client.StramAppLauncher;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.spark.Partition;
 import org.apache.spark.Partitioner;
@@ -32,6 +35,7 @@ import scala.reflect.ClassTag;
 
 import java.io.*;
 import java.util.BitSet;
+import java.util.Properties;
 import java.util.Random;
 
 public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
@@ -64,12 +68,17 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         context=ac;
         _sc=ac;
     }
-    public static Object readFromAlluxio(String path) throws IOException, AlluxioException, ClassNotFoundException {
-        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
-        AlluxioURI pathURI=new AlluxioURI(path);
-        FileInStream inStream = fs.openFile(pathURI);
-        ObjectInputStream ois= new ObjectInputStream(inStream);
-        return ois.readObject();
+    public synchronized  static Object readFromAlluxio(String path)  {
+        try {
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI = new AlluxioURI("/user/anurag/spark-apex/"+path);
+            FileInStream inStream = fs.openFile(pathURI);
+            ObjectInputStream ois = new ObjectInputStream(inStream);
+            return ois.readObject();
+        }
+        catch (IOException | AlluxioException | ClassNotFoundException e){
+                throw new RuntimeException(e);
+        }
     }
     public Object readFromFile(String path) throws IOException, ClassNotFoundException {
         FileInputStream fis = new FileInputStream(path);
@@ -184,21 +193,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     @Override
     public T[] take(int num) {
-//        ArrayList<T> a = new ArrayList<>(num);
-//        Object[] ret = this.collect();
-//        for ( int i=0; i< num; i++) {
-//            a.add((T) ret[i]);
-//        }
-//    return a.toArray((T[]) Array.newInstance(this.getClass().getTypeParameters()[0].getClass(), num));
-        if(num==1){
-//            try {
-//                return (T[]) readFromFile("/tmp/spark-apex/selectedData.ser");
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
-        }
+
         MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
         DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
         TakeOperator takeOperator =cloneDag.addOperator(System.currentTimeMillis()+" Take Operator",TakeOperator.class);
@@ -207,7 +202,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,takeOperator.input);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/spark-apex/selectedData.ser");
+        writer.setAbsoluteFilePath("selectedData");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", takeOperator.output, writer.input);
         try {
@@ -215,16 +210,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        T[] array= null;
-        try {
-            array = (T[]) readFromAlluxio("/tmp/spark-apex/selectedData.ser");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (AlluxioException e) {
-            e.printStackTrace();
-        }
+        T[] array = (T[]) readFromAlluxio("selectedData");
+        deleteSUCCESSFile();
         return array;
     }
 
@@ -296,7 +283,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
         //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/spark-apex/outputData");
+        writer.setAbsoluteFilePath("reducedValue");
 
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", reduceOperator.output, writer.input);
 
@@ -305,13 +292,17 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        try {
-            T reducedValue= (T) readFromAlluxio("/tmp/spark-apex/outputData");
-            return reducedValue;
-        } catch (IOException | AlluxioException | ClassNotFoundException e ) {
-            throw new RuntimeException(e);
+        while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
+        T reducedValue= (T) readFromAlluxio("reducedValue");
+        deleteSUCCESSFile();
+        return reducedValue;
     }
 
     @Override
@@ -340,25 +331,37 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/spark-apex/outputDataCount");
+        writer.setAbsoluteFilePath("count");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         try {
             launch(cloneDag,3000,"count",launchOnCluster);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Long count = 0L;
-        try {
-            count = (Long) readFromAlluxio("/tmp/spark-apex/outputDataCount");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (AlluxioException e) {
-            e.printStackTrace();
+        while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        Long count= (Long) readFromAlluxio("count");
+//        try {
+//            while(!successFileExists()) {
+//                Thread.sleep(5);
+//                System.out.println("SUCCESS comes to those who sleep");
+//            }
+//
+//
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+
         if(count==null)
             return 0L;
+        deleteSUCCESSFile();
         return count;
     }
 
@@ -416,59 +419,93 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         else
             runDagLocal(cloneDag,0,name);
     }
+    public String getProperty(String prop){
+        Properties properties = new Properties();
+        InputStream input;
+        try {
+            input = new FileInputStream("/home/anurag/spark-apex/spark-example/src/main/resources/path.properties");
+            properties.load(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties.getProperty(prop);
 
+    }
     public void runDag(MyDAG cloneDag,long runMillis,String name) throws Exception {
         cloneDag.validate();
-        String jars="/home/anurag/spark-apex/spark-example/OUTPUT_DIR/activation-1.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/activemq-client-5.8.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-core-client-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-core-common-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-gcs-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-hdfs-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-local-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-s3-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-s3a-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/alluxio-underfs-swift-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/ant-1.9.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/ant-launcher-1.9.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/antlr4-runtime-4.5.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/aopalliance-1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/aopalliance-repackaged-2.4.0-b34.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-api-3.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-api-3.5.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-bufferserver-3.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-bufferserver-3.5.0-SNAPSHOT.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-common-3.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-engine-3.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-engine-3.5.0-SNAPSHOT.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/apex-shaded-ning19-1.0.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/arpack_combined_all-0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/asm-3.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/avro-1.7.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/avro-ipc-1.7.7.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/avro-ipc-1.7.7-tests.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/avro-mapred-1.7.7-hadoop2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/aws-java-sdk-core-1.10.73.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/aws-java-sdk-kms-1.10.73.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/aws-java-sdk-s3-1.10.73.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/breeze_2.10-0.12.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/breeze-macros_2.10-0.12.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/bval-core-0.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/bval-jsr303-0.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/chill_2.10-0.8.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/chill-java-0.8.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-beanutils-1.8.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-cli-1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-codec-1.10.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-collections-3.2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-compiler-2.7.8.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-compress-1.4.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-configuration-1.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-crypto-1.0.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-digester-1.8.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-el-1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-httpclient-3.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-io-2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-io-2.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-lang-2.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-lang-2.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-lang3-3.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-logging-1.1.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-math-2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-math3-3.4.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/commons-net-2.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/compress-lzf-1.0.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/core-1.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/curator-client-2.1.0-incubating.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/curator-client-2.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/curator-framework-2.1.0-incubating.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/curator-framework-2.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/curator-recipes-2.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/fastutil-7.0.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/geronimo-j2ee-management_1.1_spec-1.0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/geronimo-jms_1.1_spec-1.1.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/gmbal-api-only-3.0.0-b023.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/grizzly-framework-2.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/grizzly-http-2.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/grizzly-http-server-2.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/grizzly-http-servlet-2.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/grizzly-rcm-2.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/guava-14.0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/guice-3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/guice-servlet-3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-annotations-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-auth-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-client-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-common-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-common-2.2.0-tests.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-hdfs-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-mapreduce-client-app-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-mapreduce-client-common-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-mapreduce-client-core-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-mapreduce-client-jobclient-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-mapreduce-client-shuffle-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-yarn-api-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-yarn-client-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-yarn-common-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hadoop-yarn-server-common-2.2.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hawtbuf-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hk2-api-2.4.0-b34.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hk2-locator-2.4.0-b34.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/hk2-utils-2.4.0-b34.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/httpclient-4.3.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/httpcore-4.3.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/ivy-2.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-annotations-2.6.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-core-2.6.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-core-asl-1.9.13.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-databind-2.6.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-dataformat-cbor-2.5.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-mapper-asl-1.9.13.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-mapper-asl-1.9.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-module-paranamer-2.6.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jackson-module-scala_2.10-2.6.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/janino-3.0.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jars,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jasper-compiler-5.5.23.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jasper-runtime-5.5.23.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javassist-3.18.1-GA.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.annotation-api-1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.inject-1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.inject-2.4.0-b34.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.mail-1.5.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/java-xmlbuilder-0.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.servlet-3.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.servlet-api-3.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/javax.ws.rs-api-2.0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jaxb-api-2.2.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jaxb-impl-2.2.3-1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jcl-over-slf4j-1.7.16.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jctools-core-1.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-apache-client4-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-client-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-client-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-common-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-container-servlet-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-container-servlet-core-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-core-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-grizzly2-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-guava-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-guice-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-json-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-media-jaxb-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-server-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-server-2.22.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-test-framework-core-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jersey-test-framework-grizzly2-1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jets3t-0.7.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jettison-1.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-6.1.26.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-continuation-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-http-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-io-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-security-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-server-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-servlet-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-util-6.1.26.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-util-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jetty-websocket-8.1.10.v20130312.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jline-2.11.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jms-api-1.1-rev-1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/joda-time-2.9.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jooq-3.6.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/joss-0.9.10.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jsch-0.1.42.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/json4s-ast_2.10-3.2.11.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/json4s-core_2.10-3.2.11.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/json4s-jackson_2.10-3.2.11.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jsp-api-2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jsr305-1.3.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jtransforms-2.4.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/jul-to-slf4j-1.7.16.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/junit-4.8.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/kryo-2.24.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/kryo-shaded-3.0.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/leveldbjni-all-1.8.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/libthrift-0.9.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/log4j-1.2.17.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/lz4-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/malhar-library-3.5.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/management-api-3.0.0-b012.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/mbassador-1.1.9.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/metrics-core-3.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/metrics-graphite-3.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/metrics-json-3.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/metrics-jvm-3.1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/minlog-1.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/minlog-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/named-regexp-0.2.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/netlet-1.2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/netlet-1.3.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/netty-3.8.0.Final.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/netty-all-4.0.42.Final.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/objenesis-2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/opencsv-2.3.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/oro-2.0.8.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/osgi-resource-locator-1.0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/paranamer-2.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-column-1.8.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-common-1.8.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-encoding-1.8.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-format-2.3.0-incubating.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-hadoop-1.8.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/parquet-jackson-1.8.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/pmml-model-1.2.15.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/pmml-schema-1.2.15.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/protobuf-java-2.5.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/py4j-0.10.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/pyrolite-4.13.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/quasiquotes_2.10-2.0.0-M8.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/RoaringBitmap-0.5.11.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/scala-compiler-2.10.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/scala-library-2.10.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/scalap-2.10.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/scala-reflect-2.10.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/scalatest_2.10-2.2.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/servlet-api-2.5.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/shapeless_2.10.4-2.0.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/slf4j-api-1.7.16.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/slf4j-log4j12-1.7.16.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/snappy-java-1.1.2.6.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-catalyst_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-core_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-graphx_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-launcher_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-mllib_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-mllib-local_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-network-common_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-network-shuffle_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-sketch_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-sql_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-streaming_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-tags_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spark-unsafe_2.10-2.1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spire_2.10-0.7.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/spire-macros_2.10-0.7.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/stax-api-1.0.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/stream-2.7.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/univocity-parsers-2.2.1.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/unused-1.0.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/validation-api-1.1.0.Final.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/xbean-asm5-shaded-4.4.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/xmlenc-0.52.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/xz-1.0.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/zip4j-1.3.2.jar,/home/anurag/spark-apex/spark-example/OUTPUT_DIR/zookeeper-3.4.5.jar";
-        log.debug("DAG successfully validated");
-//        LocalMode lma = LocalMode.newInstance();
+        String jars=getProperty("jars");
+        log.info("DAG successfully validated {}",name);
         Configuration conf = new Configuration(true);
-//        conf.set("dt.dfsRootDirectory","/user/anurag");
         conf.set("fs.defaultFS","hdfs://localhost:54310");
         conf.set("yarn.resourcemanager.address", "localhost:8032");
         conf.addResource(new File("/home/anurag/spark-apex/spark-example/src/main/resources/properties.xml").toURI().toURL());
         conf.set(StramAppLauncher.LIBJARS_CONF_KEY_NAME,jars);
-//        conf.addResource(new File("/home/anurag/datatorrent/current/conf/dt-site.xml").toURI().toURL());
         GenericApplication app = new GenericApplication();
-        app.setDag(cloneDag);
-//        try {
-//            lma.prepareDAG(app, conf);
-//        } catch (Exception e) {
-//            throw new RuntimeException("Exception in prepareDAG", e);
-//        }
-//        YarnAppLauncher launcher = Launcher.getLauncher(Launcher.LaunchMode.YARN);
-//        launcher.launchApp(app,conf);
-//        File successFile = new File("/tmp/spark-apex/_SUCCESS");
-//        i     f(successFile.exists())    {
-//            successFile.delete();
-//        }
+        app.setDag(cloneDag)    ;
+        YarnConfiguration conf2 = new YarnConfiguration();
+        YarnClient c = YarnClient.createYarnClient();
+
+        c.init(conf);
+        c.start();
+
+//        List<ApplicationReport> appsReport = c.getApplications(states);
+//        appsReport.get(0).getApplicationId();
         StramAppLauncher appLauncher = new StramAppLauncher(name, conf);
         appLauncher.loadDependencies();
         StreamingAppFactory appFactory = new StreamingAppFactory(app, name);
+
         ApplicationId id = appLauncher.launchApp(appFactory);
-        YarnConfiguration conf2 = new YarnConfiguration();
-//        conf2.addResource("/home/anurag/hadoop/hadoop-2.7.2/etc/hadoop");
-
+        while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        c.killApplication(id);
+        deleteJars(id.toString());
         log.info(" Address {}",conf2.get("yarn.resourcemanager.address"));
+    }
+    public void deleteJars(String path){
+        Configuration conf = new Configuration();
+        Path pt=new Path("hdfs://localhost:54310/user/anurag/datatorrent/apps/"+path);
+        FileSystem hdfs = null;
+        try {
+            hdfs = FileSystem.get(pt.toUri(), conf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            hdfs.delete(pt, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        log.info("Deleted jars from {}",path);
+    }
+    public synchronized void deleteSUCCESSFile() {
+        try {
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI=new AlluxioURI("/user/anurag/spark-apex/_SUCCESS");
+            if(fs.exists(pathURI)) fs.delete(pathURI);
 
-//        while(!successFile.exists()) {
-//            try {
-//                Thread.sleep(5);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-        log.info("Killed Application {} {}",name,id);
-
+        } catch (IOException | AlluxioException e) {
+            e.printStackTrace();
+        }
 
     }
-    public  boolean successFileExists() throws IOException, AlluxioException {
+    public  boolean successFileExists(){
+
         alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
-        AlluxioURI pathURI=new AlluxioURI("/_SUCCESS");
-        return fs.exists(pathURI);
+        AlluxioURI pathURI=new AlluxioURI("/user/anurag/spark-apex/_SUCCESS");
+        try {
+            return fs.exists(pathURI);
+        } catch (IOException | AlluxioException e) {
+            throw new RuntimeException(e);
+        }
 
     }
-    public void runDagLocal(MyDAG cloneDag,long runMillis,String name) throws IOException, AlluxioException {
+    public void runDagLocal(MyDAG cloneDag,long runMillis,String name) throws IOException, AlluxioException, InterruptedException {
         cloneDag.validate();
         log.info("DAG successfully validated {}",name);
         LocalMode lma = LocalMode.newInstance();
@@ -483,13 +520,11 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         LocalMode.Controller lc = lma.getController();
 //        File successFile = new File("/tmp/spark-apex/_SUCCESS");
 //        if(successFile.exists())    successFile.delete();
-        alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
-        AlluxioURI pathURI=new AlluxioURI("/_SUCCESS");
-        if(fs.exists(pathURI)) fs.delete(pathURI);
         lc.runAsync();
         while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
             try {
-                Thread.sleep(5);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

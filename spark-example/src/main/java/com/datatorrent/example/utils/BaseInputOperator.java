@@ -8,6 +8,8 @@ import com.datatorrent.api.InputOperator;
 import com.datatorrent.example.MyBaseOperator;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,7 +21,7 @@ import java.io.Serializable;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOperator,Serializable {
-    private BufferedReader br;
+    private transient BufferedReader br;
     public String path;
 
     public BaseInputOperator(){
@@ -49,6 +51,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
         try {
             String line = br.readLine();
             if (line != null) {
+                log.info("Reading lines");
                 output.emit(line);
 
             }
@@ -63,7 +66,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     }
     public  boolean successFileExists() throws IOException, AlluxioException {
         alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
-        AlluxioURI pathURI=new AlluxioURI("/_SUCCESS");
+        AlluxioURI pathURI=new AlluxioURI("/user/anurag/spark-apex/_SUCCESS");
         return fs.exists(pathURI);
 
     }
@@ -71,11 +74,12 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     public void beginWindow(long windowId) {
         if(sent){
             try {
-                if(successFileExists())
-                    throw new ShutdownException();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (AlluxioException e) {
+                if(successFileExists()) {
+                     deleteSUCCESSFile();
+                     log.info("Killing Application");
+//                    throw new ShutdownException();
+                }
+            } catch (IOException | AlluxioException e) {
                 e.printStackTrace();
             }
 
@@ -83,7 +87,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
             controlOut.emit(true);
         }
     }
-
+    Logger log = LoggerFactory.getLogger(BaseInputOperator.class);
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
@@ -100,7 +104,7 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
 
 
         }catch(Exception e){
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -108,5 +112,15 @@ public class BaseInputOperator<T> extends MyBaseOperator<T> implements InputOper
     public String toString() {
         return super.toString();
     }
+    public synchronized void deleteSUCCESSFile() {
+        try {
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI=new AlluxioURI("/user/anurag/spark-apex/_SUCCESS");
+            if(fs.exists(pathURI)) fs.delete(pathURI);
 
+        } catch (IOException | AlluxioException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
