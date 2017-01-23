@@ -27,7 +27,7 @@ public class TestChiSqSelector implements Serializable {
     }
     public TestChiSqSelector(ApexContext sc){
 
-        String path = "/home/harsh/apex-integration/spark-apex/spark-example/src/main/resources/data/sample_libsvm_data.txt";
+        String path = "hdfs://localhost:54310/harsh/chi/sample_libsvm_data.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
         ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
         ChiSqSelector selector = new ChiSqSelector(50);

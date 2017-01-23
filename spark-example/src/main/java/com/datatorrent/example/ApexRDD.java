@@ -135,11 +135,11 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
     }
 
     public DefaultOutputPortSerializable getControlOutput(MyDAG cloneDag){
-        BaseInputOperator currentOperator= (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+        SplitRecordReader currentOperator= (SplitRecordReader) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
         return currentOperator.getControlOut();
     }
-    public BaseInputOperator getBaseInputOperator(MyDAG cloneDag){
-        return (BaseInputOperator) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
+    public SplitRecordReader getBaseInputOperator(MyDAG cloneDag){
+        return (SplitRecordReader) cloneDag.getOperatorMeta(cloneDag.getFirstOperatorName()).getOperator();
     }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
