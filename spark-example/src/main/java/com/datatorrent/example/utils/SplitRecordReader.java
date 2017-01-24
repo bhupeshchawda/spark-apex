@@ -10,6 +10,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -20,16 +22,16 @@ import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
 public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOperator,Serializable {
     public String path;
-
-    public InputSplit splits[];
-    public FileInputFormat fileInputFormat;
     public boolean shutApp=false;
     public String appName="";
-    public RecordReader recordReader;
-    public JobConf jobConf;
     public int minPartitions;
-    public LongWritable longWritable;
-    public Text text;
+    public transient InputSplit splits[];
+    public transient FileInputFormat fileInputFormat;
+    public transient Configuration conf;
+    public transient RecordReader recordReader;
+    public transient JobConf jobConf;
+    public transient LongWritable longWritable;
+    public transient Text text;
     private int operatorId;
 
     public SplitRecordReader(){}
@@ -52,13 +54,16 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         return controlOut;
     }
     public boolean sent=false;
+    Logger log = LoggerFactory.getLogger(SplitRecordReader.class);
     public void emitTuples() {
 
         try {
-            recordReader = fileInputFormat.getRecordReader(splits[operatorId-1],jobConf,Reporter.NULL);
+
+            log.info("Number of splits {}",splits.length );
             if(recordReader.next(longWritable,text))
             {
                 output.emit(text.toString());
+                log.info(text.toString());
             }
             else {
                 sent=true;
@@ -69,7 +74,7 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         }
     }
     public InputSplit[] splitFileRecorder(String path, int minPartitions){
-        Configuration conf = new Configuration(true);
+         conf = new Configuration(true);
         JobConf jobConf = new JobConf(conf);
 
         FileInputFormat fileInputFormat = new TextInputFormat();
@@ -112,19 +117,20 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         super.setup(context);
         operatorId = context.getId();
         try{
-            Configuration conf = new Configuration();
+            conf = new Configuration();
             jobConf = new JobConf(conf);
             fileInputFormat = new TextInputFormat();
             ((TextInputFormat)fileInputFormat).configure(jobConf);
             text = new Text();
             longWritable = new LongWritable();
             splits=splitFileRecorder(path,minPartitions);
+            recordReader = fileInputFormat.getRecordReader(splits[operatorId-1],jobConf,Reporter.NULL);
         }catch(Exception e){
             e.printStackTrace();
         }
     }
     public boolean checkSucess(String path) throws IOException {
-        Configuration conf = new Configuration();
+         conf = new Configuration();
         Path pt=new Path(path);
         FileSystem hdfs = FileSystem.get(pt.toUri(), conf);
         if(hdfs.exists(pt))
