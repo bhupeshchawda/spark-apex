@@ -58,12 +58,8 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
     public void emitTuples() {
 
         try {
-
-            log.info("Number of splits {}",splits.length );
-            if(recordReader.next(longWritable,text))
-            {
+            if(recordReader.next(longWritable,text)) {
                 output.emit(text.toString());
-                log.info(text.toString());
             }
             else {
                 sent=true;
@@ -74,9 +70,6 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         }
     }
     public InputSplit[] splitFileRecorder(String path, int minPartitions){
-         conf = new Configuration(true);
-        JobConf jobConf = new JobConf(conf);
-
         FileInputFormat fileInputFormat = new TextInputFormat();
         ((TextInputFormat)fileInputFormat).configure(jobConf);
         fileInputFormat.addInputPaths(jobConf,path);
@@ -117,9 +110,9 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         super.setup(context);
         operatorId = context.getId();
         try{
-            conf = new Configuration();
+            conf = new Configuration(true);
             jobConf = new JobConf(conf);
-            fileInputFormat = new TextInputFormat();
+                fileInputFormat = new TextInputFormat();
             ((TextInputFormat)fileInputFormat).configure(jobConf);
             text = new Text();
             longWritable = new LongWritable();
@@ -130,7 +123,6 @@ public class SplitRecordReader<T> extends MyBaseOperator<T> implements InputOper
         }
     }
     public boolean checkSucess(String path) throws IOException {
-         conf = new Configuration();
         Path pt=new Path(path);
         FileSystem hdfs = FileSystem.get(pt.toUri(), conf);
         if(hdfs.exists(pt))

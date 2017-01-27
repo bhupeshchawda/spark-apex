@@ -16,11 +16,10 @@ import java.util.HashMap;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Serializable{
-    private BufferedWriter bw;
-    private FileSystem hdfs;
-    OutputStream os;
+    public transient FileSystem hdfs;
+    public transient OutputStream os;
     boolean shutDown= false;
-    Configuration configuration;
+    public transient Configuration configuration;
     public String appName="";
     public String absoluteFilePath = "hdfs://localhost:54310";
     public ObjectFileWriterOperator(){}
@@ -28,24 +27,26 @@ public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Se
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);
-
+        try {
+            configuration = new Configuration(true);
+            hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void endWindow() {
         super.endWindow();
         if(shutDown){
-            Configuration configuration = new Configuration();
             try {
-                hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
-
                 Path file = new Path("hdfs://localhost:54310/harsh/chi/success/Chi"+appName+"Success");
                 if (hdfs.exists(file)) {
                     hdfs.delete(file, true);
                 }
                 os = hdfs.create(file);
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -56,14 +57,6 @@ public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Se
         @Override
         public void process(Object tuple) {
             try {
-                configuration = new Configuration();
-                try {
-                    hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (URISyntaxException e) {
-                    e.printStackTrace();
-                }
                 Path file = new Path(absoluteFilePath);
                 if (hdfs.exists(file)) {
                     hdfs.delete(file, true);
@@ -79,7 +72,7 @@ public class ObjectFileWriterOperator<T> extends MyBaseOperator<T> implements Se
                     oos.flush();
                     oos.close();
                     shutDown=true;
-                    hdfs.close();
+                    //hdfs.close();
                 }catch (Exception e){
                     e.printStackTrace();
                 }

@@ -31,7 +31,7 @@ public class MapFunctionOperator<T> extends MyBaseOperator implements Serializab
             catch (Exception e){
                // log.info("Exception Occured Due to {} ",tuple);
                 output.emit(tuple);
-              //  e.printStackTrace();
+                e.printStackTrace();
             }
 
         }

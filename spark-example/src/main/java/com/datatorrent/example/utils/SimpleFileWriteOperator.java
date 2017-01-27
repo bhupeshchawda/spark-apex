@@ -17,11 +17,11 @@ import java.net.URISyntaxException;
 public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Serializable {
     public static BufferedWriter bw;
     public SimpleFileWriteOperator(){}
-    Configuration configuration;
+    public transient Configuration configuration;
     OutputStream os;
     public String appName="";
     boolean closeStreams=false,shutDown=false;
-    private FileSystem hdfs;
+    public transient FileSystem hdfs;
     public String absoluteFilePath = "hdfs://localhost:54310";
 
     @Override
@@ -65,7 +65,7 @@ public class SimpleFileWriteOperator<T> extends MyBaseOperator<T> implements Ser
         closeStreams = true;
         if(shutDown)
         {
-            Configuration configuration = new Configuration();
+             configuration = new Configuration();
             try {
                 hdfs = FileSystem.get(new URI("hdfs://localhost:54310"), configuration);
 

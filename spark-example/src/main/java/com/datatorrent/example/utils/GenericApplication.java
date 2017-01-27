@@ -10,6 +10,7 @@ import com.datatorrent.api.Operator.InputPort;
 import com.datatorrent.api.Operator.OutputPort;
 import com.datatorrent.common.partitioner.StatelessPartitioner;
 import com.datatorrent.lib.codec.JavaSerializationStreamCodec;
+import com.datatorrent.stram.engine.PortContext;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.logical.LogicalPlan.InputPortMeta;
 import com.datatorrent.stram.plan.logical.LogicalPlan.OperatorMeta;
@@ -41,6 +42,9 @@ public class GenericApplication implements StreamingApplication
                 Operator.OutputPort<Object> op = (OutputPort<Object>) s.getSource().getPortObject();
                 Operator.InputPort<Object> ip = (InputPort<Object>) i.getPortObject();
                 dag.addStream(s.getName(), op, ip).setLocality(DAG.Locality.CONTAINER_LOCAL);
+                 if(i.getAttributes().contains(Context.PortContext.PARTITION_PARALLEL)) {
+                     dag.setInputPortAttribute(i.getPortObject(),Context.PortContext.PARTITION_PARALLEL, true);
+                 }
                 dag.setInputPortAttribute(s.getSinks().get(0).getPortObject(), Context.PortContext.STREAM_CODEC,
                         new JavaSerializationStreamCodec());
             }

@@ -39,7 +39,7 @@ public class CountByVlaueOperator<K,V> extends MyBaseOperator implements Seriali
     };
 
     Logger log = LoggerFactory.getLogger(CountByVlaueOperator.class);
-    public static HashMap<Object, Long> hashMap;
+    public static transient HashMap<Object, Long> hashMap;
     @Override
     public void setup(Context.OperatorContext context) {
         super.setup(context);

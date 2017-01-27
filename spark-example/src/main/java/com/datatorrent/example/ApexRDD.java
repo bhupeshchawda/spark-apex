@@ -1,5 +1,6 @@
 package com.datatorrent.example;
 
+import com.datatorrent.api.Context;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.api.Operator;
 import com.datatorrent.common.partitioner.StatelessPartitioner;
@@ -94,6 +95,7 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
 
         return ;
     }
+
     public ApexRDD(RDD<T> rdd, ClassTag<T> classTag) {
         super(rdd, classTag);
         this.dag=((ApexRDD<T>)rdd).dag;
@@ -149,6 +151,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         MapOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map " , new MapOperator());
         m1.f=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
+        int minPartitions = getBaseInputOperator(cloneDag).minPartitions;
+        cloneDag.setAttribute(m1,PARTITIONER,new StatelessPartitioner<MyBaseOperator>(minPartitions));
+        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.PARTITION_PARALLEL,true);
         //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
@@ -162,6 +167,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         MapFunctionOperator m1 = cloneDag.addOperator(System.currentTimeMillis()+ " Map1 " , new MapFunctionOperator());
         m1.ff=f;
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream1 ", currentOutputPort, m1.input);
+        int minPartitions = getBaseInputOperator(cloneDag).minPartitions;
+        cloneDag.setAttribute(m1,PARTITIONER,new StatelessPartitioner<MyBaseOperator>(minPartitions));
+        cloneDag.setInputPortAttribute(m1.input, Context.PortContext.PARTITION_PARALLEL,true);
         //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         ApexRDD<U> temp = (ApexRDD<U>) SerializationUtils.clone(this);
         temp.dag = cloneDag;
@@ -176,6 +184,9 @@ public class ApexRDD<T> extends ApexRDDs<T> implements java.io.Serializable {
         //cloneDag.setAttribute(filterOperator,PARTITIONER, new StatelessPartitioner<ReduceOperator>(apexRDDPartitioner.numPartitions()));
         filterOperator.f = f;
         cloneDag.addStream(System.currentTimeMillis()+ " FilterStream " + 1, currentOutputPort, filterOperator.input);
+        int minPartitions = getBaseInputOperator(cloneDag).minPartitions;
+        cloneDag.setAttribute(filterOperator,PARTITIONER,new StatelessPartitioner<MyBaseOperator>(minPartitions));
+        cloneDag.setInputPortAttribute(filterOperator.input, Context.PortContext.PARTITION_PARALLEL,true);
         ApexRDD<T> temp = (ApexRDD<T>) SerializationUtils.clone(this);
         temp.dag = (MyDAG) SerializationUtils.clone(cloneDag);
         return temp;

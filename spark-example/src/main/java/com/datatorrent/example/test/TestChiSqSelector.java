@@ -29,7 +29,7 @@ public class TestChiSqSelector implements Serializable {
 
         String path = "hdfs://localhost:54310/harsh/chi/sample_libsvm_data.txt";
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path), tag);
+        ApexRDD<LabeledPoint> inputData = new ApexRDD<LabeledPoint> (MLUtils.loadLibSVMFile(sc, path,-1,2), tag);
         ChiSqSelector selector = new ChiSqSelector(50);
         ApexRDD discretizedData = (ApexRDD) inputData.map(new Function<LabeledPoint, LabeledPoint>() {
             @Override

@@ -14,7 +14,6 @@ import java.io.Serializable;
 @DefaultSerializer(JavaSerializer.class)
 public class FirstOperator<U> extends MyBaseOperator implements Serializable {
     private boolean flag =true;
-    public LabeledPoint a;
     Logger log = LoggerFactory.getLogger(FirstOperator.class);
     public DefaultInputPortSerializable<U> input = new DefaultInputPortSerializable<U>() {
 
@@ -22,8 +21,6 @@ public class FirstOperator<U> extends MyBaseOperator implements Serializable {
         public void process(U tuple) {
             if(flag) {
                 output.emit((U)tuple);
-                a= (LabeledPoint) tuple;
-                //log.info("First tuple {}", tuple);
                 flag=false;
             }
         }
