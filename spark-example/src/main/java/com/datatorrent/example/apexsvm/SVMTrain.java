@@ -7,6 +7,7 @@ import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.classification.SVMWithSGD;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
+import org.junit.Assert;
 import scala.reflect.ClassTag;
 
 import java.io.FileInputStream;
@@ -28,14 +29,15 @@ public class SVMTrain {
             e.printStackTrace();
         }
 
-        ApexContext sc= new ApexContext(new ApexConf().setMaster("local[2]").setAppName("Linear SVM"));
+        ApexContext sc= new ApexContext(new ApexConf().setMaster("local").setAppName("Linear SVM"));
         ClassTag<LabeledPoint> tag = scala.reflect.ClassTag$.MODULE$.apply(LabeledPoint.class);
-        ApexRDD<LabeledPoint> data = new ApexRDD<>(MLUtils.loadLibSVMFile(sc, properties.getProperty("trainData")),tag);
-
+        ApexRDD<LabeledPoint> data = new ApexRDD<>(MLUtils.loadLibSVMFile(sc, properties.getProperty("testData")),tag);
+        System.out.println(data.count());
+        Assert.assertTrue(false);
         int numIterations = 100;
+
         final SVMModel model = SVMWithSGD.train(data, numIterations);
 
-// Clear the default threshold.
         model.clearThreshold();
         model.save(sc,properties.getProperty("SVMModelPath"));
     }

@@ -151,7 +151,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
     @Override
     public T first() {
-        return this.collect()[0];
+        return this.take(1)[0];
     }
 
     @Override
@@ -162,26 +162,51 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
 //        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
         cloneDag.addStream(System.currentTimeMillis()+" Collect Stream",currentOutputPort,collectOperator.input);
+
         try {
             runDag(cloneDag,3000,"Collect DAG");
         } catch (Exception e) {
             e.printStackTrace();
         }
         T[] array= (T[]) CollectOperator.t.toArray();
-
         return array;
     }
 
     @Override
     public T[] take(int num) {
-        ArrayList<T> a = new ArrayList<>(num);
-        Object[] ret = this.collect();
-        for ( int i=0; i< num; i++) {
-            a.add((T) ret[i]);
+        MyDAG cloneDag= (MyDAG) SerializationUtils.clone(this.dag);
+        DefaultOutputPortSerializable currentOutputPort = getCurrentOutputPort(cloneDag);
+        TakeOperator takeOperator =cloneDag.addOperator(System.currentTimeMillis()+" Take Operator",TakeOperator.class);
+        takeOperator.count=num;
+//        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        cloneDag.addStream(System.currentTimeMillis()+" Take Stream",currentOutputPort,takeOperator.input);
+        FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
+        //cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
+        writer.setAbsoluteFilePath("selectedData");
+
+        cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", takeOperator.output, writer.input);
+        try {
+            runDag(cloneDag,3000,"take");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-    return a.toArray((T[]) Array.newInstance(this.getClass().getTypeParameters()[0].getClass(), num));
+        T[] array = (T[]) readFromAlluxio("selectedData");
+        deleteSUCCESSFile();
+        return array;
     }
 
+    public synchronized  static Object readFromAlluxio(String path)  {
+        try {
+            alluxio.client.file.FileSystem fs = alluxio.client.file.FileSystem.Factory.get();
+            AlluxioURI pathURI = new AlluxioURI("/user/krushika/spark-apex/"+path);
+            FileInStream inStream = fs.openFile(pathURI);
+            ObjectInputStream ois = new ObjectInputStream(inStream);
+            return ois.readObject();
+        }
+        catch (IOException | AlluxioException | ClassNotFoundException e){
+            throw new RuntimeException(e);
+        }
+    }
     @Override
     public <U> RDD<U> map(Function1<T, U> f, ClassTag<U> evidence$3) {
 
@@ -192,7 +217,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 //        ScalaApexRDD$.MODULE$.test((ScalaApexRDD<Tuple2<Object, Object>>) this, (ClassTag<Object>) evidence$3,null,null);
         cloneDag.addStream( System.currentTimeMillis()+ " MapStream ", currentOutputPort, m1.input);
         //cloneDag.setInputPortAttribute(m1.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        ApexRDD<U> temp= (ApexRDD<U>) createClone(cloneDag);
+        ApexRDD<U> temp= (  ApexRDD<U>) createClone(cloneDag);
         return temp;
     }
 
@@ -243,7 +268,8 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 //        TakeOperator.count=num;
 ////        cloneDag.setInputPortAttribute(collectOperator.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
 //        cloneDag.addStream(System.currentTimeMillis()+" Take Stream",currentOutputPort,takeOperator.input);
-//        runDag(cloneDag,3000);
+//        runDag(ls
+// cloneDag,3000);
 //        return (T[]) toArray(TakeOperator.elements.iterator());
 //    }
 
@@ -270,6 +296,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        deleteSUCCESSFile();
         return (T) ReduceOperator.finalValue;
     }
 
@@ -299,7 +326,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
         cloneDag.addStream(System.currentTimeMillis()+" ControlDone Stream", controlOutput, countOperator.controlDone);
         FileWriterOperator writer = cloneDag.addOperator( System.currentTimeMillis()+" FileWriter", FileWriterOperator.class);
        // cloneDag.setInputPortAttribute(writer.input, Context.PortContext.STREAM_CODEC, new JavaSerializationStreamCodec());
-        writer.setAbsoluteFilePath("/tmp/outputDataCount");
+        writer.setAbsoluteFilePath("count");
         cloneDag.addStream(System.currentTimeMillis()+"FileWriterStream", countOperator.output, writer.input);
         try {
             runDag(cloneDag,3000,"Count DAG");
@@ -307,9 +334,19 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
             e.printStackTrace();
         }
 
-        Integer count = fileReader("/tmp/outputDataCount");
+        while(!successFileExists()) {
+            log.info("Waiting for the _SUCCESS file");
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Long count= (Long) readFromAlluxio("count");
         if(count==null)
             return 0L;
+        deleteSUCCESSFile();
         return count;
     }
 
@@ -397,7 +434,7 @@ public class ApexRDD<T> extends ScalaApexRDD<T> implements Serializable {
 
         ApplicationId id = appLauncher.launchApp(appFactory);
         while(!successFileExists()) {
-            log.info("Waiting for the _SUCCESS file");
+//            log.info("Waiting for the _SUCCESS file");
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {

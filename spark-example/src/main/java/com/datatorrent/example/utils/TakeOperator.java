@@ -13,13 +13,24 @@ import java.util.ArrayList;
  */
 @DefaultSerializer(JavaSerializer.class)
 public class TakeOperator extends MyBaseOperator implements Serializable {
+    private boolean emitted;
+
     public TakeOperator(){}
-    public static ArrayList<Object> elements ;
-    public static  int count;
+    public  ArrayList<Object> elements ;
+    public  int count;
 
     @Override
     public void setup(Context.OperatorContext context) {
+        emitted=false;
         elements=  new ArrayList<>();
+    }
+
+    @Override
+    public void beginWindow(long windowId) {
+        if(count==0 && !emitted){
+            output.emit(elements.toArray());
+            emitted=true;
+        }
     }
 
     public DefaultInputPortSerializable input =new DefaultInputPortSerializable() {
@@ -31,6 +42,7 @@ public class TakeOperator extends MyBaseOperator implements Serializable {
             }
         }
     };
+    public final  DefaultOutputPortSerializable<Object> output = new DefaultOutputPortSerializable<Object>();
     @Override
     public DefaultInputPortSerializable getInputPort() {
         return null;

@@ -1,6 +1,6 @@
 <configuration>
     <property>
         <name>dt.operator.*.attr.MEMORY_MB</name>
-        <value>128</value>
+        <value>64</value>
     </property>
 </configuration>

@@ -39,12 +39,12 @@ public class AlluxioOperations {
 
     }
 
-    public void AlluxioWriteObject(String path) throws IOException, AlluxioException {
+    public void AlluxioWriteObject(String path, Object o) throws IOException, AlluxioException {
         FileSystem fs = FileSystem.Factory.get();
         AlluxioURI alluxioURI = new AlluxioURI(path);
         FileOutStream fos = fs.createFile(alluxioURI);
         ObjectOutputStream os = new ObjectOutputStream(fos);
-        os.defaultWriteObject();
+        os.writeObject(o);
         os.close();
         fos.close();
 
